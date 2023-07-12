@@ -1,10 +1,10 @@
-name = "{{project-name}}"
+name = "rust-worker"
 type = "javascript"
 workers_dev = true
 compatibility_date = "2022-01-20"
 
 [vars]
-WORKERS_RS_VERSION = "0.0.9"
+WORKERS_RS_VERSION = "0.0.17"
 
 [build]
 command = "cargo install -q worker-build && worker-build --release" # required

@@ -19,7 +19,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
                 &_ => Response::ok(_result)
             }
         }
-        "POST" | "PUT" | "INSERT" => {
+        "POST" | "PUT" => {
             if req.path().as_str() == "/" {
                 return Response::ok("cannot update /")
             }

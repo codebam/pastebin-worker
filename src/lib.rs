@@ -14,6 +14,14 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
                 .text().await
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .unwrap_or_else(|| "404".to_string());
+            if req.path().as_str() == "/" {
+                return Response::from_html(_result)
+            }
+            if req.path().as_str().trim_end_matches(".*").len() > 0 {
+                return Response::from_body(
+                    ResponseBody::Body(_result.as_str().as_bytes().to_vec())
+                )
+            }
             return match _result.as_str() {
                 "404" => Response::error(_result, 404),
                 &_ => Response::ok(_result)

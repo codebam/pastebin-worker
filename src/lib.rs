@@ -25,7 +25,10 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
                 .text().await
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .unwrap_or_else(|| "404".to_string());
-            Response::ok(_result)
+            return match _result.as_str() {
+                "404" => Response::error(_result, 404),
+                &_ => Response::ok(_result)
+            }
         }
         &_ => Response::ok(method)
     }

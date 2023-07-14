@@ -9,7 +9,8 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     match method_str {
         "POST" | "PUT" => {
             let _result = env.kv("rust_worker")
-                .map_err(|e| console_log!("{}", e)).unwrap().put(req.path().as_str(), data.clone())
+                .map_err(|e| console_log!("{}", e)).unwrap()
+                .put(req.path().as_str(), data.clone())
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .execute().await;
             Response::ok(data)
@@ -20,7 +21,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
                 .get(req.path().as_str())
                 .text().await
                 .map_err(|e| console_log!("{}", e)).unwrap()
-                .unwrap_or_else(|| "".to_string());
+                .unwrap_or_else(|| "404".to_string());
             Response::ok(_result)
         }
         &_ => Response::ok(method)

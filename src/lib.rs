@@ -16,9 +16,11 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         },
         "GET" => {
             let _result = env.kv("rust_worker")
-                .map_err(|e| console_log!("{}", e)).unwrap().get(req.path().as_str())
+                .map_err(|e| console_log!("{}", e)).unwrap()
+                .get(req.path().as_str())
                 .text().await
-                .map_err(|e| console_log!("{}", e)).unwrap().unwrap();
+                .map_err(|e| console_log!("{}", e)).unwrap()
+                .unwrap_or_else(|| "".to_string());
             Response::ok(_result)
         }
         &_ => Response::ok(method)

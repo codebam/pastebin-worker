@@ -2,5 +2,10 @@ name = "worker-rust"
 main = "build/worker/shim.mjs"
 compatibility_date = "2023-03-22"
 
+kv_namespaces = [
+    { binding = "rust_worker", id = "af1d182c17504fad9b3625f1599d99b9" }
+]
+
 [build]
 command = "cargo install -q worker-build && worker-build --release"
+

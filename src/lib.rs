@@ -8,6 +8,9 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     let data = req_mut.text().await.unwrap();
     match method_str {
         "POST" | "PUT" => {
+            if req.path().as_str() == "/" {
+                return Response::ok("cannot update /")
+            }
             let _result = env.kv("rust_worker")
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .put(req.path().as_str(), data.clone())

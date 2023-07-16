@@ -1,6 +1,6 @@
 # rust-pastebin-worker
 
-[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/codebam/rust-pastebin-worker)
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/codebam/pastebin.seanbehan.ca)
 
 Set up your own KV in the wrangler.toml
 

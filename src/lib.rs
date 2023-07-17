@@ -4,8 +4,7 @@ use worker::*;
 async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     let method = req.method().to_string();
     let method_str = method.as_str();
-    let mut req_mut = req.clone_mut().unwrap();
-    let data = req_mut.text().await.unwrap();
+    let mut req_mut = req.clone_mut().map_err(|e| console_log!("{}", e)).unwrap();
     match method_str {
         "GET" => {
             let _result = env.kv("rust_worker")
@@ -33,18 +32,31 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
             if req.path().as_str() == "/" {
                 return Response::ok("cannot update /")
             }
+            let form_entry = req_mut
+                .form_data().await.map_err(|e| console_log!("{}", e)).unwrap()
+                .get("upload").unwrap();
+            let file = match form_entry {
+                FormEntry::Field(form_entry) => {
+                    console_log!("{}", form_entry);
+                    File::new(form_entry.into_bytes(), "upload")
+                },
+                FormEntry::File(form_entry) => {
+                    console_log!("{:?}", form_entry.bytes().await);
+                    form_entry
+                }
+            };
             let _result = env.kv("rust_worker")
                 .map_err(|e| console_log!("{}", e)).unwrap()
-                .put(req.path().as_str(), data.clone())
+                .put(req.path().as_str(), String::from_utf8(file.bytes().await.unwrap()).unwrap())
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .execute().await;
-            Response::ok(data)
+            Response::ok(String::from_utf8(file.bytes().await.unwrap()).unwrap())
         },
         "DELETE" => {
             let _result = env.kv("rust_worker")
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .delete(req.path().as_str()).await;
-            Response::ok("deleted")
+            Response::ok("404")
         }
         &_ => Response::ok(method)
     }

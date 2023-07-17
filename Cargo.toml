@@ -11,6 +11,7 @@ wasm-opt = false
 crate-type = ["cdylib"]
 
 [dependencies]
+formdata = "0.13.0"
 worker = "0.0.15"
 
 [profile.release]

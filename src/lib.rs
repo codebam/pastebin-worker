@@ -21,7 +21,9 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
                     if req.path().as_str() == "/" {
                         return Response::from_html(_result)
                     }
-                    if req.path().as_str().trim_end_matches(".*").len() > 0 {
+                    let reqpath = req.path();
+                    let path = Path::new(reqpath.as_str());
+                    if path.extension() != None {
                         return Response::from_body(
                             ResponseBody::Body(_result.as_str().as_bytes().to_vec())
                         )

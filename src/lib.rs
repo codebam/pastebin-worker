@@ -1,5 +1,5 @@
 #![feature(path_file_prefix)]
-use std::path::Path;
+use std::{path::Path, ffi::OsStr};
 
 use worker::*;
 
@@ -10,7 +10,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     let mut req_mut = req.clone_mut().map_err(|e| console_log!("{}", e)).unwrap();
     let reqpath = req.path();
     let path = Path::new(reqpath.as_str());
-    let name = "/".to_string() + path.file_prefix().unwrap().to_str().unwrap();
+    let name = "/".to_string() + path.file_prefix().unwrap_or_else(|| OsStr::new("")).to_str().unwrap_or_else(|| "");
     match method_str {
         "GET" => {
             let _result = env.kv("rust_worker")

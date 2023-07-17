@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use worker::*;
 
 #[event(fetch)]
@@ -45,9 +47,11 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
                     form_entry
                 }
             };
+            let path = Path::new(file.name().as_str()).to_string_lossy().to_string();
+            let path_str = "/".to_string() + path.as_str();
             let _result = env.kv("rust_worker")
                 .map_err(|e| console_log!("{}", e)).unwrap()
-                .put(req.path().as_str(), String::from_utf8(file.bytes().await.unwrap()).unwrap())
+                .put(path_str.as_str(), String::from_utf8(file.bytes().await.unwrap()).unwrap())
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .execute().await;
             Response::ok(String::from_utf8(file.bytes().await.unwrap()).unwrap())

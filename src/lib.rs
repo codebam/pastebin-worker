@@ -59,7 +59,10 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
                 .put(path_str.as_str(), String::from_utf8(file.bytes().await.map_err(|e| console_log!("{}", e)).unwrap()).map_err(|e| console_log!("{}", e)).unwrap())
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .execute().await;
-            Response::ok(String::from_utf8(file.bytes().await.map_err(|e| console_log!("{}", e)).unwrap()).unwrap())
+            let url = req.url().unwrap();
+            let redirect = url.to_string() + path_str.as_str();
+            let redirect_url = Url::parse(redirect.as_str()).unwrap();
+            Response::redirect(redirect_url)
         },
         "DELETE" => {
             let _result = env.kv("rust_worker")

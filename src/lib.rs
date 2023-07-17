@@ -1,3 +1,4 @@
+#![feature(path_file_prefix)]
 use std::path::Path;
 
 use worker::*;
@@ -7,11 +8,14 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     let method = req.method().to_string();
     let method_str = method.as_str();
     let mut req_mut = req.clone_mut().map_err(|e| console_log!("{}", e)).unwrap();
+    let reqpath = req.path();
+    let path = Path::new(reqpath.as_str());
+    let name = "/".to_string() + path.file_prefix().unwrap().to_str().unwrap();
     match method_str {
         "GET" => {
             let _result = env.kv("rust_worker")
                 .map_err(|e| console_log!("{}", e)).unwrap()
-                .get(req.path().as_str())
+                .get(name.as_str())
                 .text().await
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .unwrap_or_else(|| "404".to_string());
@@ -21,8 +25,6 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
                     if req.path().as_str() == "/" {
                         return Response::from_html(_result)
                     }
-                    let reqpath = req.path();
-                    let path = Path::new(reqpath.as_str());
                     if path.extension() != None {
                         return Response::from_body(
                             ResponseBody::Body(_result.as_str().as_bytes().to_vec())
@@ -49,8 +51,9 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
                     form_entry
                 }
             };
-            let path = Path::new(file.name().as_str()).to_string_lossy().to_string();
-            let path_str = "/".to_string() + path.as_str();
+            let filename = file.name();
+            let path = Path::new(filename.as_str()).file_prefix().unwrap().to_str().unwrap();
+            let path_str = "/".to_string() + path;
             let _result = env.kv("rust_worker")
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .put(path_str.as_str(), String::from_utf8(file.bytes().await.map_err(|e| console_log!("{}", e)).unwrap()).map_err(|e| console_log!("{}", e)).unwrap())

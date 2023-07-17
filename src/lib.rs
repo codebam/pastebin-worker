@@ -35,9 +35,6 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
             }
         }
         "POST" | "PUT" => {
-            if req.path().as_str() == "/" {
-                return Response::ok("cannot update /")
-            }
             let form_entry = req_mut
                 .form_data().await.map_err(|e| console_log!("{}", e)).unwrap()
                 .get("upload").unwrap();
@@ -54,6 +51,9 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
             let filename = file.name();
             let path = Path::new(filename.as_str()).file_prefix().unwrap().to_str().unwrap();
             let path_str = "/".to_string() + path;
+            if path_str == "/" {
+                return Response::ok("cannot update /")
+            }
             let _result = env.kv("rust_worker")
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .put(path_str.as_str(), String::from_utf8(file.bytes().await.map_err(|e| console_log!("{}", e)).unwrap()).map_err(|e| console_log!("{}", e)).unwrap())

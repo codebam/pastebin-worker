@@ -41,7 +41,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
                     File::new(form_entry.into_bytes(), "upload")
                 },
                 FormEntry::File(form_entry) => {
-                    console_log!("{:?}", form_entry.bytes().await);
+                    console_log!("{:?}", String::from_utf8(form_entry.bytes().await.unwrap()).unwrap());
                     form_entry
                 }
             };

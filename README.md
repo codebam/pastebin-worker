@@ -14,5 +14,5 @@ wrangler deploy
 Upload it with curl
 
 ```
-curl -X POST --data-binary @uploader.html https://pastebin.u.workers.dev
+curl -X POST -F upload=@uploader.html https://pastebin.username.workers.dev
 ```

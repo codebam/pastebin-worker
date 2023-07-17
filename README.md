@@ -2,17 +2,5 @@
 
 [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/codebam/pastebin.seanbehan.ca)
 
-Set up your own KV in the wrangler.toml
+Set up your own KV in the wrangler.toml and put uploader.html at /
 
-Comment out the part that disallows uploading to / and upload the uploader.html
-there if you want.
-
-```
-wrangler deploy
-```
-
-Upload it with curl
-
-```
-curl -X POST -F upload=@uploader.html https://pastebin.username.workers.dev
-```

@@ -11,7 +11,16 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     let router = Router::new();
     router
         .get_async("/", |_req, ctx| async move {
-            let reqpath = _req.path();
+            let _result = ctx.kv("rust_worker")
+                .map_err(|e| console_log!("{}", e)).unwrap()
+                .get("/")
+                .text().await
+                .map_err(|e| console_log!("{}", e)).unwrap()
+                .unwrap_or_else(|| "404".to_string());
+            Response::from_html(_result)
+        })
+        .get_async("/:file", |_req, ctx| async move {
+            let reqpath = ctx.param("file").unwrap();
             let path = Path::new(reqpath.as_str());
             let name = "/".to_string() + path.file_prefix().unwrap_or_else(|| OsStr::new("")).to_str().unwrap_or_else(|| "");
             let _result = ctx.kv("rust_worker")
@@ -23,9 +32,6 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
             return match _result.as_str() {
                 "404" => Response::error(_result, 404),
                 &_ => {
-                    if _req.path().as_str() == "/" {
-                        return Response::from_html(_result)
-                    }
                     if path.extension() != None {
                         return Response::from_body(
                             ResponseBody::Body(_result.as_str().as_bytes().to_vec())

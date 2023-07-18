@@ -52,44 +52,48 @@ async fn delete(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     Response::ok("deleted")
 }
 
+async fn get_index(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
+    let _result = ctx.kv("rust_worker")
+        .map_err(console_error).unwrap()
+        .get("/")
+        .text().await
+        .map_err(|e| console_log!("{}", e)).unwrap()
+        .unwrap_or_else(|| "404".to_string());
+    Response::from_html(_result)
+}
+
+async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
+    let reqpath = decode(ctx.param("file").unwrap()).expect("UTF-8").to_string();
+    let path = Path::new(reqpath.as_str());
+    let name = path.file_prefix()
+        .unwrap_or_else(|| OsStr::new("")).to_str()
+        .unwrap_or_else(|| "");
+    let _result = ctx.kv("rust_worker")
+        .map_err(console_error).unwrap()
+        .get(name)
+        .text().await
+        .map_err(|e| console_log!("{}", e))
+        .unwrap_or_else(|_| Some("404".to_string()))
+        .unwrap_or_else(|| "404".to_string());
+    let body = general_purpose::STANDARD.decode(_result.as_str())
+        .unwrap_or_else(|_| "".as_bytes().to_vec());
+    return match _result.as_str() {
+        "404" => Response::error(_result, 404),
+        &_ => {
+            Response::from_body(
+                ResponseBody::Body(body)
+            )
+        } 
+    }
+}
+
 #[event(fetch)]
 async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     panic::set_hook(Box::new(console_error_panic_hook::hook));
     let router = Router::new();
     router
-        .get_async("/", |_req, ctx| async move {
-            let _result = ctx.kv("rust_worker")
-                .map_err(console_error).unwrap()
-                .get("/")
-                .text().await
-                .map_err(|e| console_log!("{}", e)).unwrap()
-                .unwrap_or_else(|| "404".to_string());
-            Response::from_html(_result)
-        })
-        .get_async("/:file", |_req, ctx| async move {
-            let reqpath = decode(ctx.param("file").unwrap()).expect("UTF-8").to_string();
-            let path = Path::new(reqpath.as_str());
-            let name = path.file_prefix()
-                .unwrap_or_else(|| OsStr::new("")).to_str()
-                .unwrap_or_else(|| "");
-            let _result = ctx.kv("rust_worker")
-                .map_err(console_error).unwrap()
-                .get(name)
-                .text().await
-                .map_err(|e| console_log!("{}", e))
-                .unwrap_or_else(|_| Some("404".to_string()))
-                .unwrap_or_else(|| "404".to_string());
-            let body = general_purpose::STANDARD.decode(_result.as_str())
-                .unwrap_or_else(|_| "".as_bytes().to_vec());
-            return match _result.as_str() {
-                "404" => Response::error(_result, 404),
-                &_ => {
-                    Response::from_body(
-                        ResponseBody::Body(body)
-                    )
-                } 
-            }
-        })
+        .get_async("/", get_index)
+        .get_async("/:file", get)
         .post_async("/", post_put)
         .put_async("/", post_put)
         .delete_async("/:file", delete)

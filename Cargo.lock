@@ -547,6 +547,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "pastebin-worker-rust"
+version = "0.1.0"
+dependencies = [
+ "base64 0.21.2",
+ "console_error_panic_hook",
+ "formdata",
+ "urlencoding",
+ "worker",
+]
+
+[[package]]
 name = "percent-encoding"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1259,17 +1270,6 @@ dependencies = [
  "wasm-bindgen-futures",
  "wasm-bindgen-macro-support",
  "worker-sys",
-]
-
-[[package]]
-name = "worker-rust"
-version = "0.1.0"
-dependencies = [
- "base64 0.21.2",
- "console_error_panic_hook",
- "formdata",
- "urlencoding",
- "worker",
 ]
 
 [[package]]

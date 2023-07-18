@@ -5,16 +5,17 @@
     <meta name="viewport" content="width=device-width">
   </head>
   <body>
+    <form method="post" enctype="multipart/form-data" action="https://pastebin.seanbehan.ca/paste.txt">
+      <div>
+        <label for="paste">paste text to upload:</label>
+        <textarea name="paste" rows="8" cols="40" id="paste"></textarea>
+      </div>
+      <button>submit</button>
+    </form>
     <form method="post" enctype="multipart/form-data" action="https://pastebin.seanbehan.ca/upload.txt">
       <div>
-        <div>
-          <label for="upload">paste text to upload:</label>
-          <textarea name="upload" rows="8" cols="40" id="upload"></textarea>
-        </div>
-        <div>
-          <label for="upload">choose a file to upload:</label>
-          <input type="file" id="upload" name="upload"></input>
-        </div>
+        <label for="upload">choose a file to upload:</label>
+        <input type="file" id="upload" name="upload"></input>
       </div>
       <button>submit</button>
     </form>

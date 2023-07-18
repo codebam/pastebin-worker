@@ -40,7 +40,7 @@ async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
         .map_err(|e| console_log!("{}", e)).unwrap()
         .execute().await;
     let url = _req.url().map_err(console_error).unwrap();
-    let redirect = url.to_string() + path_str;
+    let redirect = String::from(url) + path_str;
     let redirect_url = Url::parse(redirect.as_str()).unwrap();
     Response::redirect(redirect_url)
 }
@@ -60,12 +60,12 @@ async fn get_index(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
         .get("/")
         .text().await
         .map_err(|e| console_log!("{}", e)).unwrap()
-        .unwrap_or_else(|| "404".to_string());
+        .unwrap_or_else(|| String::from("404"));
     Response::from_html(_result)
 }
 
 async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
-    let reqpath = decode(ctx.param("file").unwrap()).expect("UTF-8").to_string();
+    let reqpath = String::from(decode(ctx.param("file").unwrap()).expect("UTF-8"));
     let path = Path::new(reqpath.as_str());
     let name = path.file_prefix()
         .unwrap_or_else(|| OsStr::new("")).to_str()
@@ -75,8 +75,8 @@ async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
         .get(name)
         .text().await
         .map_err(|e| console_log!("{}", e))
-        .unwrap_or_else(|_| Some("404".to_string()))
-        .unwrap_or_else(|| "404".to_string());
+        .unwrap_or_else(|_| Some(String::from("404")))
+        .unwrap_or_else(|| String::from("404"));
     let body = general_purpose::STANDARD.decode(_result.as_str())
         .unwrap_or_else(|_| "".as_bytes().to_vec());
     return match _result.as_str() {

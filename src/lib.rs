@@ -3,17 +3,18 @@ use std::{path::Path, ffi::OsStr};
 
 use worker::*;
 
+mod utils;
+
 #[event(fetch)]
 async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
-    let method = req.method().to_string();
-    let method_str = method.as_str();
-    let mut req_mut = req.clone_mut().map_err(|e| console_log!("{}", e)).unwrap();
-    let reqpath = req.path();
-    let path = Path::new(reqpath.as_str());
-    let name = "/".to_string() + path.file_prefix().unwrap_or_else(|| OsStr::new("")).to_str().unwrap_or_else(|| "");
-    match method_str {
-        "GET" => {
-            let _result = env.kv("rust_worker")
+    utils::set_panic_hook();
+    let router = Router::new();
+    router
+        .on_async("/", |_req, ctx| async move {
+            let reqpath = _req.path();
+            let path = Path::new(reqpath.as_str());
+            let name = "/".to_string() + path.file_prefix().unwrap_or_else(|| OsStr::new("")).to_str().unwrap_or_else(|| "");
+            let _result = ctx.kv("rust_worker")
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .get(name.as_str())
                 .text().await
@@ -22,7 +23,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
             return match _result.as_str() {
                 "404" => Response::error(_result, 404),
                 &_ => {
-                    if req.path().as_str() == "/" {
+                    if _req.path().as_str() == "/" {
                         return Response::from_html(_result)
                     }
                     if path.extension() != None {
@@ -33,8 +34,9 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
                     Response::ok(_result)
                 } 
             }
-        }
-        "POST" | "PUT" => {
+        })
+        .post_async("/", |_req, ctx| async move {
+            let mut req_mut = _req.clone_mut().map_err(|e| console_log!("{}", e)).unwrap();
             let form_data = req_mut
                 .form_data().await.map_err(|e| console_log!("{}", e)).unwrap();
             let form_entry = form_data.get("upload").unwrap_or_else(|| form_data.get("paste").unwrap());
@@ -54,23 +56,22 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
             if path_str == "/" {
                 return Response::ok("cannot update /")
             }
-            let _result = env.kv("rust_worker")
+            let _result = ctx.kv("rust_worker")
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .put(path_str.as_str(), String::from_utf8(file.bytes().await.map_err(|e| console_log!("{}", e)).unwrap()).map_err(|e| console_log!("{}", e)).unwrap())
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .execute().await;
-            let url = req.url().map_err(|e| console_log!("{}", e)).unwrap();
+            let url = _req.url().map_err(|e| console_log!("{}", e)).unwrap();
             let redirect = url.to_string() + path_str.as_str();
             let redirect_url = Url::parse(redirect.as_str()).unwrap();
             Response::redirect(redirect_url)
-        },
-        "DELETE" => {
-            let _result = env.kv("rust_worker")
+        })
+        .delete_async("/", |_req, ctx| async move {
+            let _result = ctx.kv("rust_worker")
                 .map_err(|e| console_log!("{}", e)).unwrap()
-                .delete(req.path().as_str()).await;
-            let url = req.url().unwrap();
+                .delete(_req.path().as_str()).await;
+            let url = _req.url().unwrap();
             Response::redirect(url)
-        }
-        &_ => Response::ok(method)
-    }
+        })
+        .run(req, env).await
 }

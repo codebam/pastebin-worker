@@ -1,6 +1,7 @@
 #![feature(path_file_prefix)]
 use std::{path::Path, ffi::OsStr, panic};
 use base64::{Engine as _, engine::general_purpose};
+use urlencoding::decode;
 
 use worker::*;
 
@@ -57,7 +58,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
             Response::from_html(_result)
         })
         .get_async("/:file", |_req, ctx| async move {
-            let reqpath = ctx.param("file").unwrap();
+            let reqpath = decode(ctx.param("file").unwrap()).expect("UTF-8").to_string();
             let path = Path::new(reqpath.as_str());
             let name = path.file_prefix()
                 .unwrap_or_else(|| OsStr::new("")).to_str()

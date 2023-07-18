@@ -3,16 +3,21 @@
   <head>
     <title>sean's pastebin uploader</title>
     <meta name="viewport" content="width=device-width">
+    <style type="text/css" media="screen">
+      form {
+        text-align: center;
+      }
+    </style>
   </head>
   <body>
-    <form method="post" enctype="multipart/form-data" action="https://pastebin.seanbehan.ca/paste.txt">
+    <form method="post" enctype="multipart/form-data" action="https://pastebin.seanbehan.ca">
       <div>
         <label for="paste">paste text to upload:</label>
         <textarea name="paste" rows="8" cols="40" id="paste"></textarea>
       </div>
       <button>submit</button>
     </form>
-    <form method="post" enctype="multipart/form-data" action="https://pastebin.seanbehan.ca/upload.txt">
+    <form method="post" enctype="multipart/form-data" action="https://pastebin.seanbehan.ca">
       <div>
         <label for="upload">choose a file to upload:</label>
         <input type="file" id="upload" name="upload"></input>

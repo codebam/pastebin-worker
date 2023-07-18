@@ -1,6 +1,6 @@
 #![feature(path_file_prefix)]
 use std::{path::Path, ffi::OsStr, panic};
-use base64::{Engine as _, engine::{self, general_purpose}, alphabet};
+use base64::{Engine as _, engine::general_purpose};
 
 use worker::*;
 

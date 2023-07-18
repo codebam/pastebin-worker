@@ -6,10 +6,6 @@ description = "a pastebin worker for cloudflare workers written in rust"
 license = "Apache-2.0"
 repository = "https://github.com/codebam/pastebin.seanbehan.ca"
 
-# https://github.com/rustwasm/wasm-pack/issues/1247
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = false
-
 [lib]
 crate-type = ["cdylib"]
 

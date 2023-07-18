@@ -48,31 +48,28 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
             }
         })
         .post_async("/", |_req, ctx| async move {
-            let mut req_mut = _req.clone_mut().map_err(console_error).unwrap();
+            let mut req_mut = _req.clone_mut().map_err(|e| console_log!("{}", e)).unwrap();
             let form_data = req_mut
                 .form_data().await.map_err(console_error).unwrap();
             let form_entry = form_data.get("upload")
                 .unwrap_or_else(|| form_data.get("paste").unwrap());
             let file = match form_entry {
                 FormEntry::Field(form_entry) => {
-                    console_log!("{}", form_entry);
                     File::new(form_entry.into_bytes(), "paste")
                 },
                 FormEntry::File(form_entry) => {
-                    console_log!("{:?}", String::from_utf8(form_entry.bytes().await.unwrap()).unwrap());
                     form_entry
                 }
             };
             let filename = file.name();
-            let path = Path::new(filename.as_str()).file_prefix()
-                .unwrap_or_else(|| OsStr::new("")).to_str().unwrap_or_else(|| "");
+            let path = Path::new(filename.as_str()).file_prefix().unwrap_or_else(|| OsStr::new("")).to_str().unwrap_or_else(|| "");
             let path_str = path;
             if path_str == "/" {
                 return Response::ok("cannot update /")
             }
             let _result = ctx.kv("rust_worker")
                 .map_err(console_error).unwrap()
-                .put(path_str, String::from_utf8(file.bytes().await.map_err(|e| console_log!("{}", e)).unwrap()).map_err(|e| console_log!("{}", e)).unwrap())
+                .put(path_str, String::from_utf8_lossy(&file.bytes().await.unwrap()))
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .execute().await;
             let url = _req.url().map_err(console_error).unwrap();

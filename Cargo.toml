@@ -14,7 +14,7 @@ base64 = "0.21.2"
 console_error_panic_hook = "0.1.7"
 formdata = "0.13.0"
 urlencoding = "2.1.2"
-worker = "0.0.17"
+worker = { version = "0.0.17", features = ["d1"] }
 
 [profile.release]
 lto = true

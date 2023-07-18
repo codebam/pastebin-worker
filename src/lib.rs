@@ -11,6 +11,29 @@ fn console_error(e: Error) {
     console_error!("{}", e);
 }
 
+#[derive(Deserialize)]
+struct DatabaseField {
+	id: String,
+	desc: String,
+}
+
+async fn db_post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
+    let id = ctx.param("id").unwrap()?;
+    let desc = _req.text().await.unwrap_or_else(|| "".to_string());
+    let field = DatabaseField{
+        id,
+        desc,
+    };
+    let d1 = ctx.env.d1("DB")?;
+    let statement = d1.prepare("INSERT field INTO data WHERE field = ?1");
+    let query = statement.bind(&[field])?;
+    let result = query.first::<Thing>(None).await?;
+    match result {
+        Some(ok) => Response::ok("ok"),
+        None => Response::error("error", 400),
+    }
+}
+
 async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let mut req_mut = _req.clone_mut().map_err(|e| console_log!("{}", e)).unwrap();
     let form_data = req_mut
@@ -95,6 +118,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         .get_async("/", get_index)
         .get_async("/:file", get)
         .post_async("/", post_put)
+        .post_async("/db/:id", db_post_put)
         .put_async("/", post_put)
         .delete_async("/:file", delete)
         .get_async("/delete/:file", delete)

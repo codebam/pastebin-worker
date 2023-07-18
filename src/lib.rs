@@ -77,7 +77,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
             let redirect_url = Url::parse(redirect.as_str()).unwrap();
             Response::redirect(redirect_url)
         })
-        .delete_async("/", |_req, ctx| async move {
+        .delete_async("/:file", |_req, ctx| async move {
             let _result = ctx.kv("rust_worker")
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .delete(_req.path().as_str()).await;

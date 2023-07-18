@@ -11,7 +11,6 @@ wasm-opt = false
 crate-type = ["cdylib"]
 
 [dependencies]
-cfg-if = "1.0.0"
 console_error_panic_hook = "0.1.7"
 formdata = "0.13.0"
 worker = "0.0.15"

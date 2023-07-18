@@ -1,16 +1,16 @@
 #![feature(path_file_prefix)]
-use std::{path::Path, ffi::OsStr};
+use std::{path::Path, ffi::OsStr, panic};
 
 use worker::*;
 
-mod utils;
+extern crate console_error_panic_hook;
 
 #[event(fetch)]
 async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
-    utils::set_panic_hook();
+    panic::set_hook(Box::new(console_error_panic_hook::hook));
     let router = Router::new();
     router
-        .on_async("/", |_req, ctx| async move {
+        .get_async("/", |_req, ctx| async move {
             let reqpath = _req.path();
             let path = Path::new(reqpath.as_str());
             let name = "/".to_string() + path.file_prefix().unwrap_or_else(|| OsStr::new("")).to_str().unwrap_or_else(|| "");

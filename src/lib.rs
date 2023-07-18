@@ -70,7 +70,8 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
                 .map_err(|e| console_log!("{}", e))
                 .unwrap_or_else(|_| Some("404".to_string()))
                 .unwrap_or_else(|| "404".to_string());
-            let body = general_purpose::STANDARD.decode(_result.as_str()).unwrap_or_else(|_| "".as_bytes().to_vec());
+            let body = general_purpose::STANDARD.decode(_result.as_str())
+                .unwrap_or_else(|_| "".as_bytes().to_vec());
             return match _result.as_str() {
                 "404" => Response::error(_result, 404),
                 &_ => {

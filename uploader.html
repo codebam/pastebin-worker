@@ -4,25 +4,44 @@
     <title>sean's pastebin uploader</title>
     <meta name="viewport" content="width=device-width">
     <style type="text/css" media="screen">
-      form {
+      body {
+        height: 85vh;
+      }
+      #form {
+        display: flex;
+        flex-direction: column;
+        align-content: space-between;
+        height: 70vh;
+        margin: auto;
         text-align: center;
+      }
+      form {
+        padding: 2em;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: black;
+          color: white;
+        }
       }
     </style>
   </head>
   <body>
-    <form method="post" enctype="multipart/form-data" action="https://pastebin.seanbehan.ca">
-      <div>
-        <label for="paste">paste text to upload:</label>
-        <textarea name="paste" rows="8" cols="40" id="paste"></textarea>
-      </div>
-      <button>submit</button>
-    </form>
-    <form method="post" enctype="multipart/form-data" action="https://pastebin.seanbehan.ca">
-      <div>
-        <label for="upload">choose a file to upload:</label>
-        <input type="file" id="upload" name="upload"></input>
-      </div>
-      <button>submit</button>
-    </form>
+    <div id="form">
+      <form method="post" enctype="multipart/form-data" action="https://pastebin.seanbehan.ca/paste.txt">
+        <div>
+          <label for="paste">paste text to upload:</label>
+          <textarea name="paste" rows="8" cols="40" id="paste"></textarea>
+        </div>
+        <button>submit</button>
+      </form>
+      <form method="post" enctype="multipart/form-data" action="https://pastebin.seanbehan.ca/upload.txt">
+        <div>
+          <label for="upload">choose a file to upload:</label>
+          <input type="file" id="upload" name="upload"></input>
+        </div>
+        <button>submit</button>
+      </form>
+    </div>
   </body>
 </html>

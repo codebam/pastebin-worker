@@ -22,10 +22,10 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         .get_async("/:file", |_req, ctx| async move {
             let reqpath = ctx.param("file").unwrap();
             let path = Path::new(reqpath.as_str());
-            let name = "/".to_string() + path.file_prefix().unwrap_or_else(|| OsStr::new("")).to_str().unwrap_or_else(|| "");
+            let name = path.file_prefix().unwrap_or_else(|| OsStr::new("")).to_str().unwrap_or_else(|| "");
             let _result = ctx.kv("rust_worker")
                 .map_err(|e| console_log!("{}", e)).unwrap()
-                .get(name.as_str())
+                .get(name)
                 .text().await
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .unwrap_or_else(|| "404".to_string());
@@ -58,17 +58,17 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
             };
             let filename = file.name();
             let path = Path::new(filename.as_str()).file_prefix().unwrap_or_else(|| OsStr::new("")).to_str().unwrap_or_else(|| "");
-            let path_str = "/".to_string() + path;
+            let path_str = path;
             if path_str == "/" {
                 return Response::ok("cannot update /")
             }
             let _result = ctx.kv("rust_worker")
                 .map_err(|e| console_log!("{}", e)).unwrap()
-                .put(path_str.as_str(), String::from_utf8(file.bytes().await.map_err(|e| console_log!("{}", e)).unwrap()).map_err(|e| console_log!("{}", e)).unwrap())
+                .put(path_str, String::from_utf8(file.bytes().await.map_err(|e| console_log!("{}", e)).unwrap()).map_err(|e| console_log!("{}", e)).unwrap())
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .execute().await;
             let url = _req.url().map_err(|e| console_log!("{}", e)).unwrap();
-            let redirect = url.to_string() + path_str.as_str();
+            let redirect = url.to_string() + path_str;
             let redirect_url = Url::parse(redirect.as_str()).unwrap();
             Response::redirect(redirect_url)
         })

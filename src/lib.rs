@@ -89,5 +89,8 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
             let url = _req.url().unwrap();
             Response::redirect(url)
         })
+        .or_else_any_method_async("/", |_req, ctx| async move {
+            Response::redirect(_req.url().unwrap())
+        })
         .run(req, env).await
 }

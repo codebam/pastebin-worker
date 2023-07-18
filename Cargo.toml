@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "a pastebin worker for cloudflare workers written in rust"
 license = "Apache-2.0"
-repository = "https://github.com/codebam/pastebin.seanbehan.ca"
+repository = "https://github.com/codebam/pastebin-worker"
 
 [lib]
 crate-type = ["cdylib"]

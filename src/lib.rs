@@ -5,6 +5,10 @@ use worker::*;
 
 extern crate console_error_panic_hook;
 
+fn console_error(e: Error) {
+    console_error!("{}", e);
+}
+
 #[event(fetch)]
 async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     panic::set_hook(Box::new(console_error_panic_hook::hook));
@@ -12,7 +16,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     router
         .get_async("/", |_req, ctx| async move {
             let _result = ctx.kv("rust_worker")
-                .map_err(|e| console_log!("{}", e)).unwrap()
+                .map_err(console_error).unwrap()
                 .get("/")
                 .text().await
                 .map_err(|e| console_log!("{}", e)).unwrap()
@@ -24,7 +28,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
             let path = Path::new(reqpath.as_str());
             let name = path.file_prefix().unwrap_or_else(|| OsStr::new("")).to_str().unwrap_or_else(|| "");
             let _result = ctx.kv("rust_worker")
-                .map_err(|e| console_log!("{}", e)).unwrap()
+                .map_err(console_error).unwrap()
                 .get(name)
                 .text().await
                 .map_err(|e| console_log!("{}", e)).unwrap()
@@ -44,7 +48,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         .post_async("/", |_req, ctx| async move {
             let mut req_mut = _req.clone_mut().map_err(|e| console_log!("{}", e)).unwrap();
             let form_data = req_mut
-                .form_data().await.map_err(|e| console_log!("{}", e)).unwrap();
+                .form_data().await.map_err(console_error).unwrap();
             let form_entry = form_data.get("upload").unwrap_or_else(|| form_data.get("paste").unwrap());
             let file = match form_entry {
                 FormEntry::Field(form_entry) => {
@@ -63,11 +67,11 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
                 return Response::ok("cannot update /")
             }
             let _result = ctx.kv("rust_worker")
-                .map_err(|e| console_log!("{}", e)).unwrap()
+                .map_err(console_error).unwrap()
                 .put(path_str, String::from_utf8(file.bytes().await.map_err(|e| console_log!("{}", e)).unwrap()).map_err(|e| console_log!("{}", e)).unwrap())
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .execute().await;
-            let url = _req.url().map_err(|e| console_log!("{}", e)).unwrap();
+            let url = _req.url().map_err(console_error).unwrap();
             let redirect = url.to_string() + path_str;
             let redirect_url = Url::parse(redirect.as_str()).unwrap();
             Response::redirect(redirect_url)

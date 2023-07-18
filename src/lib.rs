@@ -26,7 +26,9 @@ async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
         }
     };
     let filename = file.name();
-    let path = Path::new(filename.as_str()).file_prefix().unwrap_or_else(|| OsStr::new("")).to_str().unwrap_or_else(|| "");
+    let path = Path::new(filename.as_str()).file_prefix()
+        .unwrap_or_else(|| OsStr::new("")).to_str()
+        .unwrap_or_else(|| "");
     let path_str = path;
     if path_str == "/" {
         return Response::ok("cannot update /")

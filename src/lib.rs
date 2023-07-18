@@ -26,7 +26,9 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         .get_async("/:file", |_req, ctx| async move {
             let reqpath = ctx.param("file").unwrap();
             let path = Path::new(reqpath.as_str());
-            let name = path.file_prefix().unwrap_or_else(|| OsStr::new("")).to_str().unwrap_or_else(|| "");
+            let name = path.file_prefix()
+                .unwrap_or_else(|| OsStr::new("")).to_str()
+                .unwrap_or_else(|| "");
             let _result = ctx.kv("rust_worker")
                 .map_err(console_error).unwrap()
                 .get(name)
@@ -46,10 +48,11 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
             }
         })
         .post_async("/", |_req, ctx| async move {
-            let mut req_mut = _req.clone_mut().map_err(|e| console_log!("{}", e)).unwrap();
+            let mut req_mut = _req.clone_mut().map_err(console_error).unwrap();
             let form_data = req_mut
                 .form_data().await.map_err(console_error).unwrap();
-            let form_entry = form_data.get("upload").unwrap_or_else(|| form_data.get("paste").unwrap());
+            let form_entry = form_data.get("upload")
+                .unwrap_or_else(|| form_data.get("paste").unwrap());
             let file = match form_entry {
                 FormEntry::Field(form_entry) => {
                     console_log!("{}", form_entry);
@@ -61,7 +64,8 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
                 }
             };
             let filename = file.name();
-            let path = Path::new(filename.as_str()).file_prefix().unwrap_or_else(|| OsStr::new("")).to_str().unwrap_or_else(|| "");
+            let path = Path::new(filename.as_str()).file_prefix()
+                .unwrap_or_else(|| OsStr::new("")).to_str().unwrap_or_else(|| "");
             let path_str = path;
             if path_str == "/" {
                 return Response::ok("cannot update /")

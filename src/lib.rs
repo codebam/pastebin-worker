@@ -1,5 +1,6 @@
 #![feature(path_file_prefix)]
 use std::{path::Path, ffi::OsStr, panic};
+use base64::{Engine as _, engine::{self, general_purpose}, alphabet};
 
 use worker::*;
 
@@ -35,15 +36,13 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
                 .text().await
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .unwrap_or_else(|| "404".to_string());
+            let body = general_purpose::STANDARD.decode(_result.as_str()).unwrap();
             return match _result.as_str() {
                 "404" => Response::error(_result, 404),
                 &_ => {
-                    if path.extension() != None {
-                        return Response::from_body(
-                            ResponseBody::Body(_result.as_str().as_bytes().to_vec())
-                        )
-                    }
-                    Response::ok(_result)
+                    Response::from_body(
+                        ResponseBody::Body(body)
+                    )
                 } 
             }
         })
@@ -67,9 +66,10 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
             if path_str == "/" {
                 return Response::ok("cannot update /")
             }
+            let b64 = general_purpose::STANDARD.encode(&file.bytes().await.unwrap());
             let _result = ctx.kv("rust_worker")
                 .map_err(console_error).unwrap()
-                .put(path_str, String::from_utf8_lossy(&file.bytes().await.unwrap()))
+                .put(path_str, b64)
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .execute().await;
             let url = _req.url().map_err(console_error).unwrap();

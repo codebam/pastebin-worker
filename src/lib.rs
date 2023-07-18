@@ -68,7 +68,8 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
             let _result = env.kv("rust_worker")
                 .map_err(|e| console_log!("{}", e)).unwrap()
                 .delete(req.path().as_str()).await;
-            Response::ok("404")
+            let url = req.url().unwrap();
+            Response::redirect(url)
         }
         &_ => Response::ok(method)
     }

@@ -35,11 +35,9 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
             }
         }
         "POST" | "PUT" => {
-            console_log!("received put request");
             let form_data = req_mut
                 .form_data().await.map_err(|e| console_log!("{}", e)).unwrap();
             let form_entry = form_data.get("upload").unwrap_or_else(|| form_data.get("paste").unwrap());
-            console_log!("got formentry");
             let file = match form_entry {
                 FormEntry::Field(form_entry) => {
                     console_log!("{}", form_entry);
@@ -50,7 +48,6 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
                     form_entry
                 }
             };
-            console_log!("got file");
             let filename = file.name();
             let path = Path::new(filename.as_str()).file_prefix().unwrap_or_else(|| OsStr::new("")).to_str().unwrap_or_else(|| "");
             let path_str = "/".to_string() + path;

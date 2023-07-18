@@ -82,9 +82,21 @@ async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     return match _result.as_str() {
         "404" => Response::error(_result, 404),
         &_ => {
-            Response::from_body(
-                ResponseBody::Body(body)
-            )
+            let ext = path.extension().unwrap().to_str().unwrap_or_else(|| "");
+            match ext {
+                "json" => {
+                    let response = Response::from_body(
+                        ResponseBody::Body(body)
+                    );
+                    let mut headers = Headers::new();
+                    let _result = headers.append("Content-type", "application/json").unwrap();
+                    Ok(Response::with_headers(response.unwrap(), headers))
+                },
+                &_ =>
+                    Response::from_body(
+                        ResponseBody::Body(body)
+                    )
+            }
         } 
     }
 }

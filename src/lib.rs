@@ -127,7 +127,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         .post_async("/", post_put)
         .put_async("/", post_put)
         .delete_async("/:file", delete)
-        .get_async("/delete/:file", delete)
+        .get_async("/:file/delete", delete)
         .or_else_any_method_async("/", |req, _ctx| async move {
             Response::redirect(req.url().unwrap())
         })

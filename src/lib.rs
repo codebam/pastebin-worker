@@ -117,12 +117,30 @@ async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     };
 }
 
+async fn get_list(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
+    let _result = ctx
+        .kv("rust_worker")
+        .map_err(console_error)
+        .unwrap()
+        .list()
+        .execute()
+        .await
+        .unwrap()
+        .keys
+        .iter()
+        .cloned()
+        .map(|x| x.name + "\n")
+        .collect::<String>();
+    Response::ok(_result)
+}
+
 #[event(fetch)]
 async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     panic::set_hook(Box::new(console_error_panic_hook::hook));
     let router = Router::new();
     router
         .get_async("/", get_index)
+        .get_async("/list", get_list)
         .get_async("/:file", get)
         .post_async("/", post_put)
         .put_async("/", post_put)

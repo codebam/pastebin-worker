@@ -19,11 +19,15 @@
         padding: 2em;
       }
       textarea {
-        font-size: 1.5em;
-        width: 100%;
+        font-size: 1.2em;
       }
       textarea, input {
         margin-bottom: 1em;
+      }
+      @media (min-width: 600px) {
+        textarea {
+          width: 50%;
+        }
       }
       @media (prefers-color-scheme: dark) {
         body {
@@ -37,7 +41,7 @@
     <div id="form">
       <form method="post" enctype="multipart/form-data">
         <div>
-          <textarea name="paste" rows="10" cols="20" id="paste"></textarea>
+          <textarea name="paste" rows="20" cols="30" id="paste"></textarea>
         </div>
         <button>submit</button>
       </form>

@@ -3,7 +3,7 @@ main = "build/worker/shim.mjs"
 compatibility_date = "2023-03-22"
 
 kv_namespaces = [
-    { binding = "rust_worker", id = "af1d182c17504fad9b3625f1599d99b9", preview_id = "df270984fc0147c3b3e73e1fa6e79328" }
+    { binding = "pastebin", id = "af1d182c17504fad9b3625f1599d99b9", preview_id = "df270984fc0147c3b3e73e1fa6e79328" }
 ]
 
 [build]

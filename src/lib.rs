@@ -35,7 +35,7 @@ async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     }
     let b64 = general_purpose::STANDARD.encode(&file.bytes().await.unwrap());
     let _result = ctx
-        .kv("rust_worker")
+        .kv("pastebin")
         .map_err(console_error)
         .unwrap()
         .put(path_str, b64)
@@ -53,7 +53,7 @@ async fn delete(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let empty_string = String::new();
     let file = ctx.param("file").unwrap_or_else(|| &empty_string).as_str();
     let _result = ctx
-        .kv("rust_worker")
+        .kv("pastebin")
         .map_err(|e| console_log!("{}", e))
         .unwrap()
         .delete(file)
@@ -63,7 +63,7 @@ async fn delete(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
 
 async fn get_index(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let _result = ctx
-        .kv("rust_worker")
+        .kv("pastebin")
         .map_err(console_error)
         .unwrap()
         .get("/")
@@ -84,7 +84,7 @@ async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
         .to_str()
         .unwrap_or_else(|| "");
     let _result = ctx
-        .kv("rust_worker")
+        .kv("pastebin")
         .map_err(console_error)
         .unwrap()
         .get(name)
@@ -119,7 +119,7 @@ async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
 
 async fn get_list(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let _result = ctx
-        .kv("rust_worker")
+        .kv("pastebin")
         .map_err(console_error)
         .unwrap()
         .list()

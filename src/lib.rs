@@ -14,9 +14,11 @@ fn console_error(e: Error) {
 async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let mut req_mut = _req.clone_mut().map_err(|e| console_log!("{}", e)).unwrap();
     let form_data = req_mut.form_data().await.map_err(console_error).unwrap();
-    let form_entry = form_data
-        .get("upload")
-        .unwrap_or_else(|| form_data.get("paste").unwrap());
+    let form_entry = form_data.get("upload").unwrap_or_else(|| {
+        form_data
+            .get("paste")
+            .unwrap_or_else(|| FormEntry::File(File::new("", "")))
+    });
     let file = match form_entry {
         FormEntry::Field(form_entry) => File::new(form_entry.into_bytes(), "paste"),
         FormEntry::File(form_entry) => form_entry,

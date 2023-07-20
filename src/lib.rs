@@ -34,7 +34,7 @@ async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
         return Response::ok("cannot update /");
     }
     let b64 = general_purpose::STANDARD.encode(&file.bytes().await.unwrap());
-    let result = ctx
+    let _result = ctx
         .kv("pastebin")
         .map_err(console_error)
         .unwrap()
@@ -52,7 +52,7 @@ async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
 async fn delete(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let empty_string = String::new();
     let file = ctx.param("file").unwrap_or_else(|| &empty_string).as_str();
-    let result = ctx
+    let _result = ctx
         .kv("pastebin")
         .map_err(|e| console_log!("{}", e))
         .unwrap()

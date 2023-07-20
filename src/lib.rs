@@ -1,6 +1,6 @@
 #![feature(path_file_prefix)]
 use base64::{engine::general_purpose, Engine as _};
-use std::{ffi::OsStr, panic, path::Path};
+use std::{ffi::OsStr, path::Path};
 use urlencoding::decode;
 
 use worker::*;
@@ -128,7 +128,7 @@ async fn get_list(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
 
 #[event(fetch)]
 async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
-    panic::set_hook(Box::new(console_error_panic_hook::hook));
+    console_error_panic_hook::set_once();
     let router = Router::new();
     router
         .get_async("/", get_index)

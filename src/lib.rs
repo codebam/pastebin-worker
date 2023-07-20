@@ -34,7 +34,7 @@ async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
         return Response::ok("cannot update /");
     }
     let b64 = general_purpose::STANDARD.encode(&file.bytes().await.unwrap());
-    let _result = ctx
+    let result = ctx
         .kv("pastebin")
         .map_err(console_error)
         .unwrap()
@@ -52,7 +52,7 @@ async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
 async fn delete(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let empty_string = String::new();
     let file = ctx.param("file").unwrap_or_else(|| &empty_string).as_str();
-    let _result = ctx
+    let result = ctx
         .kv("pastebin")
         .map_err(|e| console_log!("{}", e))
         .unwrap()
@@ -62,7 +62,7 @@ async fn delete(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
 }
 
 async fn get_index(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
-    let _result = ctx
+    let result = ctx
         .kv("pastebin")
         .map_err(console_error)
         .unwrap()
@@ -72,7 +72,7 @@ async fn get_index(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
         .map_err(|e| console_log!("{}", e))
         .unwrap()
         .unwrap_or_else(|| String::from("404"));
-    Response::from_html(_result)
+    Response::from_html(result)
 }
 
 async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
@@ -83,7 +83,7 @@ async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
         .unwrap_or_else(|| OsStr::new(""))
         .to_str()
         .unwrap_or_else(|| "");
-    let _result = ctx
+    let result = ctx
         .kv("pastebin")
         .map_err(console_error)
         .unwrap()
@@ -94,10 +94,10 @@ async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
         .unwrap_or_else(|_| Some(String::from("404")))
         .unwrap_or_else(|| String::from("404"));
     let body = general_purpose::STANDARD
-        .decode(_result.as_str())
+        .decode(result.as_str())
         .unwrap_or_else(|_| "".as_bytes().to_vec());
-    return match _result.as_str() {
-        "404" => Response::error(_result, 404),
+    return match result.as_str() {
+        "404" => Response::error(result, 404),
         &_ => {
             let ext = path
                 .extension()
@@ -118,7 +118,7 @@ async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
 }
 
 async fn get_list(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
-    let _result = ctx
+    let result = ctx
         .kv("pastebin")
         .map_err(console_error)
         .unwrap()
@@ -131,7 +131,7 @@ async fn get_list(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
         .cloned()
         .map(|x| x.name + "\n")
         .collect::<String>();
-    Response::ok(_result)
+    Response::ok(result)
 }
 
 #[event(fetch)]

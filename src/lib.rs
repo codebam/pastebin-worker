@@ -7,13 +7,9 @@ use worker::*;
 
 extern crate console_error_panic_hook;
 
-fn console_error(e: Error) {
-    console_error!("{}", e);
-}
-
 async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let mut req_mut = _req.clone_mut().map_err(|e| console_log!("{}", e)).unwrap();
-    let form_data = req_mut.form_data().await.map_err(console_error).unwrap();
+    let form_data = req_mut.form_data().await.unwrap();
     let form_entry = form_data.get("upload").unwrap_or_else(|| {
         form_data
             .get("paste")
@@ -36,14 +32,13 @@ async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let b64 = general_purpose::STANDARD.encode(&file.bytes().await.unwrap());
     let _result = ctx
         .kv("pastebin")
-        .map_err(console_error)
         .unwrap()
         .put(path_str, b64)
         .map_err(|e| console_log!("{}", e))
         .unwrap()
         .execute()
         .await;
-    let url = _req.url().map_err(console_error).unwrap();
+    let url = _req.url().unwrap();
     let redirect = String::from(url) + path_str;
     let redirect_url = Url::parse(redirect.as_str()).unwrap();
     Response::redirect(redirect_url)
@@ -64,7 +59,6 @@ async fn delete(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
 async fn get_index(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let result = ctx
         .kv("pastebin")
-        .map_err(console_error)
         .unwrap()
         .get("/")
         .text()
@@ -85,7 +79,6 @@ async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
         .unwrap_or_else(|| "");
     let result = ctx
         .kv("pastebin")
-        .map_err(console_error)
         .unwrap()
         .get(name)
         .text()
@@ -120,7 +113,6 @@ async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
 async fn get_list(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let result = ctx
         .kv("pastebin")
-        .map_err(console_error)
         .unwrap()
         .list()
         .execute()
@@ -129,7 +121,7 @@ async fn get_list(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
         .keys
         .iter()
         .cloned()
-        .map(|x| x.name + "\n")
+        .map(|key| key.name + "\n")
         .collect::<String>();
     Response::ok(result)
 }

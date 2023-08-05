@@ -1,5 +1,13 @@
 #![feature(path_file_prefix)]
 use base64::{engine::general_purpose, Engine as _};
+use chacha20poly1305::{
+    aead::{Aead, AeadCore, KeyInit, OsRng},
+    consts::U32,
+    ChaCha20Poly1305, Nonce,
+};
+use generic_array::GenericArray;
+use serde::{Deserialize, Serialize};
+use serde_json;
 use std::{ffi::OsStr, path::Path};
 use urlencoding::decode;
 
@@ -39,9 +47,60 @@ async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
         .execute()
         .await;
     let url = _req.url().unwrap();
-    let redirect = String::from(url) + path_str;
+    let redirect = String::from(url) + "get/" + path_str;
     let redirect_url = Url::parse(redirect.as_str()).unwrap();
     Response::redirect(redirect_url)
+}
+
+async fn post_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
+    let key = ChaCha20Poly1305::generate_key(&mut OsRng);
+    let key_ser = serde_json::to_string(&key).unwrap();
+    let keytext = general_purpose::STANDARD.encode(serde_json::to_string(&key).unwrap()) + "\n";
+    let cipher = ChaCha20Poly1305::new(&key);
+    let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng); // 96-bits; unique per message
+    let mut req_mut = _req.clone_mut().map_err(|e| console_log!("{}", e)).unwrap();
+    let form_data = req_mut.form_data().await.unwrap();
+    let form_entry = form_data.get("upload").unwrap_or_else(|| {
+        form_data
+            .get("paste")
+            .unwrap_or_else(|| FormEntry::File(File::new("", "")))
+    });
+    let file = match form_entry {
+        FormEntry::Field(form_entry) => File::new(form_entry.into_bytes(), "paste"),
+        FormEntry::File(form_entry) => form_entry,
+    };
+    let ciphertext = cipher
+        .encrypt(
+            &nonce,
+            general_purpose::STANDARD
+                .encode(file.bytes().await.unwrap())
+                .as_bytes()
+                .as_ref(),
+        )
+        .unwrap();
+    let filename = file.name();
+    let path = Path::new(filename.as_str())
+        .file_prefix()
+        .unwrap_or_else(|| OsStr::new(""))
+        .to_str()
+        .unwrap_or_else(|| "");
+    let path_str = path;
+    if path_str == "/" {
+        return Response::ok("cannot update /");
+    }
+    let b64 = general_purpose::STANDARD.encode(&ciphertext);
+    let _result = ctx
+        .kv("pastebin")
+        .unwrap()
+        .put(path_str, b64)
+        .map_err(|e| console_log!("{}", e))
+        .unwrap()
+        .execute()
+        .await;
+    let url = _req.url().unwrap();
+    let redirect = String::from(url) + path_str;
+    let redirect_url = Url::parse(redirect.as_str()).unwrap();
+    Response::ok(keytext)
 }
 
 async fn delete(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
@@ -110,6 +169,53 @@ async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     };
 }
 
+async fn get_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
+    let key_param = ctx.param("key").unwrap().to_owned();
+    let key_decoded: String = urlencoding::decode(key_param.as_str()).unwrap().to_string();
+    let key: GenericArray<u8, U32> = serde_json::from_str(key_decoded.as_str()).unwrap();
+    let cipher = ChaCha20Poly1305::new(&key);
+    let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
+    let reqpath = String::from(decode(ctx.param("file").unwrap()).expect("UTF-8"));
+    let path = Path::new(reqpath.as_str());
+    let name = path
+        .file_prefix()
+        .unwrap_or_else(|| OsStr::new(""))
+        .to_str()
+        .unwrap_or_else(|| "");
+    let result = ctx
+        .kv("pastebin")
+        .unwrap()
+        .get(name)
+        .text()
+        .await
+        .map_err(|e| console_log!("{}", e))
+        .unwrap_or_else(|_| Some(String::from("404")))
+        .unwrap_or_else(|| String::from("404"));
+    let body = general_purpose::STANDARD
+        .decode(result.as_str())
+        .unwrap_or_else(|_| "".as_bytes().to_vec());
+    let plaintext = cipher.decrypt(&nonce, body.as_ref()).unwrap();
+    return match result.as_str() {
+        "404" => Response::error(result, 404),
+        &_ => {
+            let ext = path
+                .extension()
+                .unwrap_or_else(|| OsStr::new(""))
+                .to_str()
+                .unwrap_or_else(|| "");
+            match ext {
+                "json" => {
+                    let response = Response::from_body(ResponseBody::Body(plaintext));
+                    let mut headers = Headers::new();
+                    let _result = headers.append("Content-type", "application/json").unwrap();
+                    Ok(Response::with_headers(response.unwrap(), headers))
+                }
+                &_ => Response::from_body(ResponseBody::Body(plaintext)),
+            }
+        }
+    };
+}
+
 async fn get_list(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let result = ctx
         .kv("pastebin")
@@ -133,9 +239,11 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     router
         .get_async("/", get_index)
         .get_async("/list", get_list)
-        .get_async("/:file", get)
+        .get_async("/get/:file", get)
+        .get_async("/decrypt/:file/:key", get_encrypted)
         .post_async("/", post_put)
         .put_async("/", post_put)
+        .post_async("/encrypt", post_encrypted)
         .delete_async("/:file", delete)
         .get_async("/:file/delete", delete)
         .or_else_any_method_async("/", |req, _ctx| async move {

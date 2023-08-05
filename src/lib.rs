@@ -166,6 +166,12 @@ async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
                     let _result = headers.append("Content-type", "application/json").unwrap();
                     Ok(Response::with_headers(response.unwrap(), headers))
                 }
+                "pdf" => {
+                    let response = Response::from_body(ResponseBody::Body(body));
+                    let mut headers = Headers::new();
+                    let _result = headers.append("Content-type", "application/pdf").unwrap();
+                    Ok(Response::with_headers(response.unwrap(), headers))
+                }
                 &_ => Response::from_body(ResponseBody::Body(body)),
             }
         }
@@ -223,6 +229,12 @@ async fn get_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response>
                     let response = Response::from_body(ResponseBody::Body(plaintext_decoded));
                     let mut headers = Headers::new();
                     let _result = headers.append("Content-type", "application/json").unwrap();
+                    Ok(Response::with_headers(response.unwrap(), headers))
+                }
+                "pdf" => {
+                    let response = Response::from_body(ResponseBody::Body(plaintext_decoded));
+                    let mut headers = Headers::new();
+                    let _result = headers.append("Content-type", "application/pdf").unwrap();
                     Ok(Response::with_headers(response.unwrap(), headers))
                 }
                 &_ => Response::from_body(ResponseBody::Body(plaintext_decoded)),

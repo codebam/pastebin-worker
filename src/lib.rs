@@ -44,7 +44,7 @@ async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
         .execute()
         .await;
     let url = _req.url().unwrap();
-    let redirect = String::from(url) + "get/" + path_str;
+    let redirect = String::from(url) + "get/" + path_str + ".txt";
     let redirect_url = Url::parse(redirect.as_str()).unwrap();
     Response::redirect(redirect_url)
 }
@@ -101,7 +101,8 @@ async fn post_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response
         + "/"
         + urlencoding::encode(&noncetext).to_string().as_str()
         + "/"
-        + path_str;
+        + path_str
+        + ".txt";
     let redirect_url = Url::parse(redirect.as_str()).unwrap();
     Response::redirect(redirect_url)
 }

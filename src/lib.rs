@@ -2,11 +2,8 @@
 use base64::{engine::general_purpose, Engine as _};
 use chacha20poly1305::{
     aead::{Aead, AeadCore, KeyInit, OsRng},
-    consts::U32,
-    ChaCha20Poly1305, Nonce,
+    ChaCha20Poly1305,
 };
-use generic_array::GenericArray;
-use serde::{Deserialize, Serialize};
 use serde_json;
 use std::{ffi::OsStr, path::Path};
 use urlencoding::decode;
@@ -54,11 +51,10 @@ async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
 
 async fn post_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let key = ChaCha20Poly1305::generate_key(&mut OsRng);
-    let key_ser = serde_json::to_string(&key).unwrap();
-    let keytext = general_purpose::STANDARD.encode(serde_json::to_string(&key).unwrap()) + "\n";
+    let keytext = general_purpose::STANDARD.encode(serde_json::to_string(&key).unwrap());
     let cipher = ChaCha20Poly1305::new(&key);
     let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng); // 96-bits; unique per message
-    let noncetext = general_purpose::STANDARD.encode(serde_json::to_string(&nonce).unwrap()) + "\n";
+    let noncetext = general_purpose::STANDARD.encode(serde_json::to_string(&nonce).unwrap());
     let mut req_mut = _req.clone_mut().map_err(|e| console_log!("{}", e)).unwrap();
     let form_data = req_mut.form_data().await.unwrap();
     let form_entry = form_data.get("upload").unwrap_or_else(|| {
@@ -99,9 +95,15 @@ async fn post_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response
         .execute()
         .await;
     let url = _req.url().unwrap();
-    let redirect = String::from(url) + path_str;
+    let redirect = String::from(url)
+        + "/decrypt/"
+        + path_str
+        + "/"
+        + urlencoding::encode(&keytext).to_string().as_str()
+        + "/"
+        + urlencoding::encode(&noncetext).to_string().as_str();
     let redirect_url = Url::parse(redirect.as_str()).unwrap();
-    Response::ok(keytext + noncetext.as_str())
+    Response::redirect(redirect_url)
 }
 
 async fn delete(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
@@ -253,7 +255,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         .get_async("/", get_index)
         .get_async("/list", get_list)
         .get_async("/get/:file", get)
-        .get_async("/decrypt/:file/:key/:nonce", get_encrypted)
+        .get_async("/encrypt/decrypt/:file/:key/:nonce", get_encrypted)
         .post_async("/", post_put)
         .put_async("/", post_put)
         .post_async("/encrypt", post_encrypted)

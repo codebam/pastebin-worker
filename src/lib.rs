@@ -97,11 +97,11 @@ async fn post_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response
     let url = _req.url().unwrap();
     let redirect = String::from(url)
         + "/decrypt/"
-        + path_str
-        + "/"
         + urlencoding::encode(&keytext).to_string().as_str()
         + "/"
-        + urlencoding::encode(&noncetext).to_string().as_str();
+        + urlencoding::encode(&noncetext).to_string().as_str()
+        + "/"
+        + path_str;
     let redirect_url = Url::parse(redirect.as_str()).unwrap();
     Response::redirect(redirect_url)
 }
@@ -255,7 +255,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         .get_async("/", get_index)
         .get_async("/list", get_list)
         .get_async("/get/:file", get)
-        .get_async("/encrypt/decrypt/:file/:key/:nonce", get_encrypted)
+        .get_async("/encrypt/decrypt/:key/:nonce/:file", get_encrypted)
         .post_async("/", post_put)
         .put_async("/", post_put)
         .post_async("/encrypt", post_encrypted)

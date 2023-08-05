@@ -58,6 +58,7 @@ async fn post_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response
     let keytext = general_purpose::STANDARD.encode(serde_json::to_string(&key).unwrap()) + "\n";
     let cipher = ChaCha20Poly1305::new(&key);
     let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng); // 96-bits; unique per message
+    let noncetext = general_purpose::STANDARD.encode(serde_json::to_string(&nonce).unwrap()) + "\n";
     let mut req_mut = _req.clone_mut().map_err(|e| console_log!("{}", e)).unwrap();
     let form_data = req_mut.form_data().await.unwrap();
     let form_entry = form_data.get("upload").unwrap_or_else(|| {
@@ -100,7 +101,7 @@ async fn post_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response
     let url = _req.url().unwrap();
     let redirect = String::from(url) + path_str;
     let redirect_url = Url::parse(redirect.as_str()).unwrap();
-    Response::ok(keytext)
+    Response::ok(keytext + noncetext.as_str())
 }
 
 async fn delete(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
@@ -172,9 +173,17 @@ async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
 async fn get_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let key_param = ctx.param("key").unwrap().to_owned();
     let key_decoded: String = urlencoding::decode(key_param.as_str()).unwrap().to_string();
-    let key: GenericArray<u8, U32> = serde_json::from_str(key_decoded.as_str()).unwrap();
+    let key_decoded2 =
+        String::from_utf8(general_purpose::STANDARD.decode(key_decoded).unwrap()).unwrap();
+    let key = serde_json::from_str(key_decoded2.as_str()).unwrap();
+    let nonce_param = ctx.param("nonce").unwrap().to_owned();
+    let nonce_decoded: String = urlencoding::decode(nonce_param.as_str())
+        .unwrap()
+        .to_string();
+    let nonce_decoded2 =
+        String::from_utf8(general_purpose::STANDARD.decode(nonce_decoded).unwrap()).unwrap();
     let cipher = ChaCha20Poly1305::new(&key);
-    let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
+    let nonce = serde_json::from_str(nonce_decoded2.as_str()).unwrap();
     let reqpath = String::from(decode(ctx.param("file").unwrap()).expect("UTF-8"));
     let path = Path::new(reqpath.as_str());
     let name = path
@@ -194,7 +203,11 @@ async fn get_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response>
     let body = general_purpose::STANDARD
         .decode(result.as_str())
         .unwrap_or_else(|_| "".as_bytes().to_vec());
-    let plaintext = cipher.decrypt(&nonce, body.as_ref()).unwrap();
+    let plaintext = cipher.decrypt(&nonce, body.as_ref()).unwrap_or_else(|_| {
+        console_log!("failed to decrypt");
+        vec![]
+    });
+    let plaintext_decoded = general_purpose::STANDARD.decode(plaintext).unwrap();
     return match result.as_str() {
         "404" => Response::error(result, 404),
         &_ => {
@@ -205,12 +218,12 @@ async fn get_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response>
                 .unwrap_or_else(|| "");
             match ext {
                 "json" => {
-                    let response = Response::from_body(ResponseBody::Body(plaintext));
+                    let response = Response::from_body(ResponseBody::Body(plaintext_decoded));
                     let mut headers = Headers::new();
                     let _result = headers.append("Content-type", "application/json").unwrap();
                     Ok(Response::with_headers(response.unwrap(), headers))
                 }
-                &_ => Response::from_body(ResponseBody::Body(plaintext)),
+                &_ => Response::from_body(ResponseBody::Body(plaintext_decoded)),
             }
         }
     };
@@ -240,7 +253,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         .get_async("/", get_index)
         .get_async("/list", get_list)
         .get_async("/get/:file", get)
-        .get_async("/decrypt/:file/:key", get_encrypted)
+        .get_async("/decrypt/:file/:key/:nonce", get_encrypted)
         .post_async("/", post_put)
         .put_async("/", post_put)
         .post_async("/encrypt", post_encrypted)

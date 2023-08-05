@@ -11,8 +11,14 @@ crate-type = ["cdylib"]
 
 [dependencies]
 base64 = "0.21.2"
+chacha20poly1305 = "0.10.1"
 console_error_panic_hook = "0.1.7"
 formdata = "0.13.0"
+generic-array = { version = "0.14.7", features = [ "serde" ] }
+getrandom = { version = "0.2.10", features = [ "js" ] }
+rand_core = "0.6.4"
+serde = "1.0.181"
+serde_json = "1.0.104"
 urlencoding = "2.1.2"
 worker = "0.0.17"
 

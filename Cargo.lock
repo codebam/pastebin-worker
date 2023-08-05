@@ -326,7 +326,7 @@ dependencies = [
  "httparse",
  "hyper",
  "log 0.4.19",
- "mime",
+ "mime 0.2.6",
  "mime_multipart",
  "textnonce",
 ]
@@ -460,12 +460,12 @@ dependencies = [
  "httparse",
  "language-tags",
  "log 0.3.9",
- "mime",
+ "mime 0.2.6",
  "num_cpus",
  "time",
  "traitobject",
  "typeable",
- "unicase",
+ "unicase 1.4.2",
  "url 1.7.2",
 ]
 
@@ -595,6 +595,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "mime"
+version = "0.3.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
+
+[[package]]
+name = "mime_guess"
+version = "2.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4192263c238a5f0d0c6bfd21f336a313a4ce1c450542449ca191bb657b4642ef"
+dependencies = [
+ "mime 0.3.17",
+ "unicase 2.6.0",
+]
+
+[[package]]
 name = "mime_multipart"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -605,7 +621,7 @@ dependencies = [
  "httparse",
  "hyper",
  "log 0.4.19",
- "mime",
+ "mime 0.2.6",
  "tempfile",
  "textnonce",
 ]
@@ -660,6 +676,7 @@ dependencies = [
  "formdata",
  "generic-array",
  "getrandom 0.2.10",
+ "mime_guess",
  "rand_core 0.6.4",
  "serde",
  "serde_json",
@@ -1097,6 +1114,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f4765f83163b74f957c797ad9253caf97f103fb064d3999aea9568d09fc8a33"
 dependencies = [
  "version_check 0.1.5",
+]
+
+[[package]]
+name = "unicase"
+version = "2.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "50f37be617794602aabbeee0be4f259dc1778fabe05e2d67ee8f79326d5cb4f6"
+dependencies = [
+ "version_check 0.9.4",
 ]
 
 [[package]]

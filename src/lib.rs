@@ -82,7 +82,13 @@ async fn post_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response
                 .as_ref(),
         )
         .unwrap();
-    let filename = file.name();
+
+    let random_name: String = rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(7)
+        .map(char::from)
+        .collect();
+    let filename = random_name;
     let path = Path::new(filename.as_str())
         .file_prefix()
         .unwrap_or_else(|| OsStr::new(""))

@@ -10,6 +10,8 @@ use urlencoding::decode;
 
 use worker::*;
 
+use rand::{distributions::Alphanumeric, Rng};
+
 extern crate console_error_panic_hook;
 
 async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
@@ -20,11 +22,16 @@ async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
             .get("paste")
             .unwrap_or_else(|| FormEntry::File(File::new("", "")))
     });
+    let random_name: String = rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(7)
+        .map(char::from)
+        .collect();
     let file = match form_entry {
         FormEntry::Field(form_entry) => File::new(form_entry.into_bytes(), "paste"),
         FormEntry::File(form_entry) => form_entry,
     };
-    let filename = file.name();
+    let filename = random_name;
     let path = Path::new(filename.as_str())
         .file_prefix()
         .unwrap_or_else(|| OsStr::new(""))
@@ -247,7 +254,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         .put_async("/", post_put)
         .post_async("/encrypt", post_encrypted)
         .delete_async("/:file", delete)
-        .get_async("/:file/delete", delete)
+        .get_async("/delete/:file", delete)
         .or_else_any_method_async("/", |req, _ctx| async move {
             Response::redirect(req.url().unwrap())
         })

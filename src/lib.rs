@@ -51,7 +51,7 @@ async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
         .execute()
         .await;
     let url = _req.url().unwrap();
-    let redirect = String::from(url) + "get/" + path_str + ".txt";
+    let redirect = String::from(url) + path_str + ".txt";
     let redirect_url = Url::parse(redirect.as_str()).unwrap();
     Response::redirect(redirect_url)
 }
@@ -254,8 +254,8 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     router
         .get_async("/", get_index)
         .get_async("/list", get_list)
-        .get_async("/get/:file", get)
         .get_async("/encrypt/decrypt/:key/:nonce/:file", get_encrypted)
+        .get_async("/:file", get)
         .post_async("/", post_put)
         .put_async("/", post_put)
         .post_async("/encrypt", post_encrypted)

@@ -17,7 +17,7 @@ curl -v -X POST -F upload=@yourfile.txt https://pastebin.seanbehan.ca
 
 See the redirect URL to get where your paste is stored.
 
-```typescript
+```javascript
 export const pastebin_url = "https://pastebin.seanbehan.ca";
 export const pastebin = {
   upload: async (filename) =>

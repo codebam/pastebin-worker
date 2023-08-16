@@ -24,7 +24,7 @@ async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     });
     let random_name: String = rand::thread_rng()
         .sample_iter(&Alphanumeric)
-        .take(7)
+        .take(10)
         .map(char::from)
         .collect();
     let file = match form_entry {
@@ -85,7 +85,7 @@ async fn post_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response
 
     let random_name: String = rand::thread_rng()
         .sample_iter(&Alphanumeric)
-        .take(7)
+        .take(10)
         .map(char::from)
         .collect();
     let filename = random_name;

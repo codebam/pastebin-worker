@@ -4,17 +4,20 @@ use chacha20poly1305::{
     aead::{Aead, AeadCore, KeyInit, OsRng},
     ChaCha20Poly1305,
 };
+use flate2::read::GzDecoder;
+use flate2::write::ZlibEncoder;
+use flate2::Compression;
+use rand::{distributions::Alphanumeric, Rng};
 use serde_json;
+use std::io::prelude::*;
 use std::{ffi::OsStr, path::Path};
 use urlencoding::decode;
-
 use worker::*;
-
-use rand::{distributions::Alphanumeric, Rng};
 
 extern crate console_error_panic_hook;
 
 async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
+    let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
     let mut req_mut = _req.clone_mut().map_err(|e| console_log!("{}", e)).unwrap();
     let form_data = req_mut.form_data().await.unwrap();
     let form_entry = form_data.get("upload").unwrap_or_else(|| {
@@ -41,7 +44,9 @@ async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     if path_str == "/" {
         return Response::ok("cannot update /");
     }
-    let b64 = general_purpose::STANDARD.encode(&file.bytes().await.unwrap());
+    e.write_all(&file.bytes().await.unwrap());
+    let compressed = e.finish().unwrap();
+    let b64 = general_purpose::STANDARD.encode(compressed);
     let _result = ctx
         .kv("pastebin")
         .unwrap()
@@ -165,11 +170,14 @@ async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let body = general_purpose::STANDARD
         .decode(result.as_str())
         .unwrap_or_else(|_| "".as_bytes().to_vec());
+    let mut d = GzDecoder::new(body.as_slice());
+    let mut decompressed = String::new();
+    d.read_to_string(&mut decompressed).unwrap();
     return match result.as_str() {
         "404" => Response::error(result, 404),
         &_ => {
             let mime = mime_guess::from_path(path).first().unwrap();
-            let response = Response::from_body(ResponseBody::Body(body));
+            let response = Response::from_body(ResponseBody::Body(decompressed.into_bytes()));
             let mut headers = Headers::new();
             let _result = headers
                 .append("Content-type", mime.to_string().as_str())

@@ -4,12 +4,9 @@ use chacha20poly1305::{
     aead::{Aead, AeadCore, KeyInit, OsRng},
     ChaCha20Poly1305,
 };
-use flate2::read::GzDecoder;
-use flate2::write::ZlibEncoder;
-use flate2::Compression;
+use lz4_flex::block::{compress_prepend_size, decompress_size_prepended};
 use rand::{distributions::Alphanumeric, Rng};
 use serde_json;
-use std::io::prelude::*;
 use std::{ffi::OsStr, path::Path};
 use urlencoding::decode;
 use worker::*;
@@ -17,7 +14,6 @@ use worker::*;
 extern crate console_error_panic_hook;
 
 async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
-    let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
     let mut req_mut = _req.clone_mut().map_err(|e| console_log!("{}", e)).unwrap();
     let form_data = req_mut.form_data().await.unwrap();
     let form_entry = form_data.get("upload").unwrap_or_else(|| {
@@ -44,8 +40,7 @@ async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     if path_str == "/" {
         return Response::ok("cannot update /");
     }
-    e.write_all(&file.bytes().await.unwrap());
-    let compressed = e.finish().unwrap();
+    let compressed = compress_prepend_size(&file.bytes().await.unwrap());
     let b64 = general_purpose::STANDARD.encode(compressed);
     let _result = ctx
         .kv("pastebin")
@@ -103,7 +98,8 @@ async fn post_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response
     if path_str == "/" {
         return Response::ok("cannot update /");
     }
-    let b64 = general_purpose::STANDARD.encode(&ciphertext);
+    let compressed = compress_prepend_size(&ciphertext);
+    let b64 = general_purpose::STANDARD.encode(compressed);
     let _result = ctx
         .kv("pastebin")
         .unwrap()
@@ -150,6 +146,19 @@ async fn get_index(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     Response::from_html(result)
 }
 
+async fn get_favicon(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
+    let result = ctx
+        .kv("pastebin")
+        .unwrap()
+        .get("favicon")
+        .text()
+        .await
+        .map_err(|e| console_log!("{}", e))
+        .unwrap()
+        .unwrap_or_else(|| String::from("404"));
+    Response::from_html(result)
+}
+
 async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let reqpath = String::from(decode(ctx.param("file").unwrap()).expect("UTF-8"));
     let path = Path::new(reqpath.as_str());
@@ -170,14 +179,12 @@ async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let body = general_purpose::STANDARD
         .decode(result.as_str())
         .unwrap_or_else(|_| "".as_bytes().to_vec());
-    let mut d = GzDecoder::new(body.as_slice());
-    let mut decompressed = String::new();
-    d.read_to_string(&mut decompressed).unwrap();
+    let decompressed = decompress_size_prepended(body.as_slice()).unwrap();
     return match result.as_str() {
         "404" => Response::error(result, 404),
         &_ => {
             let mime = mime_guess::from_path(path).first().unwrap();
-            let response = Response::from_body(ResponseBody::Body(decompressed.into_bytes()));
+            let response = Response::from_body(ResponseBody::Body(decompressed));
             let mut headers = Headers::new();
             let _result = headers
                 .append("Content-type", mime.to_string().as_str())
@@ -220,10 +227,13 @@ async fn get_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response>
     let body = general_purpose::STANDARD
         .decode(result.as_str())
         .unwrap_or_else(|_| "".as_bytes().to_vec());
-    let plaintext = cipher.decrypt(&nonce, body.as_ref()).unwrap_or_else(|_| {
-        console_log!("failed to decrypt");
-        vec![]
-    });
+    let decompressed = decompress_size_prepended(body.as_slice()).unwrap();
+    let plaintext = cipher
+        .decrypt(&nonce, decompressed.as_ref())
+        .unwrap_or_else(|_| {
+            console_log!("failed to decrypt");
+            vec![]
+        });
     let plaintext_decoded = general_purpose::STANDARD.decode(plaintext).unwrap();
     return match result.as_str() {
         "404" => Response::error(result, 404),
@@ -261,6 +271,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     let router = Router::new();
     router
         .get_async("/", get_index)
+        .get_async("/favicon.ico", get_favicon)
         .get_async("/list", get_list)
         .get_async("/encrypt/decrypt/:key/:nonce/:file", get_encrypted)
         .get_async("/:file", get)

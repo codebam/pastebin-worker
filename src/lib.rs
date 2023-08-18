@@ -146,19 +146,6 @@ async fn get_index(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     Response::from_html(result)
 }
 
-async fn get_favicon(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
-    let result = ctx
-        .kv("pastebin")
-        .unwrap()
-        .get("favicon")
-        .text()
-        .await
-        .map_err(|e| console_log!("{}", e))
-        .unwrap()
-        .unwrap_or_else(|| String::from("404"));
-    Response::from_html(result)
-}
-
 async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let reqpath = String::from(decode(ctx.param("file").unwrap()).expect("UTF-8"));
     let path = Path::new(reqpath.as_str());
@@ -179,7 +166,8 @@ async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let body = general_purpose::STANDARD
         .decode(result.as_str())
         .unwrap_or_else(|_| "".as_bytes().to_vec());
-    let decompressed = decompress_size_prepended(body.as_slice()).unwrap();
+    let decompressed =
+        decompress_size_prepended(body.as_slice()).unwrap_or_else(|_| "".as_bytes().to_vec());
     return match result.as_str() {
         "404" => Response::error(result, 404),
         &_ => {
@@ -227,7 +215,8 @@ async fn get_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response>
     let body = general_purpose::STANDARD
         .decode(result.as_str())
         .unwrap_or_else(|_| "".as_bytes().to_vec());
-    let decompressed = decompress_size_prepended(body.as_slice()).unwrap();
+    let decompressed =
+        decompress_size_prepended(body.as_slice()).unwrap_or_else(|_| "".as_bytes().to_vec());
     let plaintext = cipher
         .decrypt(&nonce, decompressed.as_ref())
         .unwrap_or_else(|_| {
@@ -271,7 +260,6 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     let router = Router::new();
     router
         .get_async("/", get_index)
-        .get_async("/favicon.ico", get_favicon)
         .get_async("/list", get_list)
         .get_async("/encrypt/decrypt/:key/:nonce/:file", get_encrypted)
         .get_async("/:file", get)

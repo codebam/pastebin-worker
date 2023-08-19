@@ -73,11 +73,12 @@ async fn post_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response
         FormEntry::Field(form_entry) => File::new(form_entry.into_bytes(), "paste"),
         FormEntry::File(form_entry) => form_entry,
     };
+    let compressed = compress_prepend_size(&file.bytes().await.unwrap());
     let ciphertext = cipher
         .encrypt(
             &nonce,
             general_purpose::STANDARD
-                .encode(file.bytes().await.unwrap())
+                .encode(compressed)
                 .as_bytes()
                 .as_ref(),
         )
@@ -98,8 +99,7 @@ async fn post_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response
     if path_str == "/" {
         return Response::ok("cannot update /");
     }
-    let compressed = compress_prepend_size(&ciphertext);
-    let b64 = general_purpose::STANDARD.encode(compressed);
+    let b64 = general_purpose::STANDARD.encode(&ciphertext);
     let _result = ctx
         .kv("pastebin")
         .unwrap()
@@ -215,20 +215,18 @@ async fn get_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response>
     let body = general_purpose::STANDARD
         .decode(result.as_str())
         .unwrap_or_else(|_| "".as_bytes().to_vec());
-    let decompressed =
-        decompress_size_prepended(body.as_slice()).unwrap_or_else(|_| "".as_bytes().to_vec());
-    let plaintext = cipher
-        .decrypt(&nonce, decompressed.as_ref())
-        .unwrap_or_else(|_| {
-            console_log!("failed to decrypt");
-            vec![]
-        });
+    let plaintext = cipher.decrypt(&nonce, body.as_ref()).unwrap_or_else(|_| {
+        console_log!("failed to decrypt");
+        vec![]
+    });
     let plaintext_decoded = general_purpose::STANDARD.decode(plaintext).unwrap();
+    let decompressed =
+        decompress_size_prepended(&plaintext_decoded).unwrap_or_else(|_| "".as_bytes().to_vec());
     return match result.as_str() {
         "404" => Response::error(result, 404),
         &_ => {
             let mime = mime_guess::from_path(path).first().unwrap();
-            let response = Response::from_body(ResponseBody::Body(plaintext_decoded));
+            let response = Response::from_body(ResponseBody::Body(decompressed));
             let mut headers = Headers::new();
             let _result = headers
                 .append("Content-type", mime.to_string().as_str())

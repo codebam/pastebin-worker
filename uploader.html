@@ -39,6 +39,12 @@
   </head>
   <body>
     <div id="form">
+      <h1>Sean's Pastebin</h1>
+      <p>After uploading you will be redirected to yourfile.txt. Make sure to
+      save the link if you're encrypting. You can change .txt to any valid MIME
+      type to display it in the browser.</p>
+      <code>curl -Ls -o /dev/null -w %{url_effective} -F "upload=@-;filename=paste.txt" https://pastebin.seanbehan.ca</code>
+      <code>curl -Ls -o /dev/null -w %{url_effective} -F "upload=@-;filename=paste.txt" https://pastebin.seanbehan.ca/encrypt</code>
       <h2>plain text</h2>
       <form method="post" enctype="multipart/form-data">
         <div>

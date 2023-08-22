@@ -39,11 +39,13 @@
   </head>
   <body>
     <div id="form">
+      <h2>plain text</h2>
       <form method="post" enctype="multipart/form-data">
         <div>
           <textarea name="paste" rows="20" cols="30" id="paste"></textarea>
         </div>
         <button>submit</button>
+      <h2>plain file</h2>
       </form>
       <form method="post" enctype="multipart/form-data">
         <div>
@@ -51,12 +53,14 @@
         </div>
         <button>submit</button>
       </form>
+      <h2>encrypted text</h2>
       <form method="post" action="./encrypt" enctype="multipart/form-data">
         <div>
           <textarea name="paste" rows="20" cols="30" id="paste"></textarea>
         </div>
         <button>submit</button>
       </form>
+      <h2>encrypted file</h2>
       <form method="post" action="./encrypt" enctype="multipart/form-data">
         <div>
           <input type="file" id="upload" name="upload">

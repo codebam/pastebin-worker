@@ -22,9 +22,6 @@
       form {
         padding: 2em;
       }
-      .encrypted {
-        display: none;
-      }
       textarea {
         font-size: 1.2em;
       }
@@ -58,6 +55,7 @@
         let showPlaintext = () => {
           [...document.getElementsByClassName('plaintext')].map((el) => { el.style.display='block'; } )
         }
+        hideEncryption();
         document.getElementById('encrypted-select').onchange
           = () => {
             encryption = document.getElementById('encrypted-select').value;

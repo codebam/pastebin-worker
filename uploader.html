@@ -67,7 +67,7 @@
               showPlaintext();
             }
           };
-        document.getElementById('plaintext-form').addEventListener('paste', (e) => {
+        const clipboardUpload = (e) => {
           const file = e.clipboardData.items[0].getAsFile();
           if (file) {
             const formdata = new FormData();
@@ -79,7 +79,22 @@
               window.location = response.url;
             }); 
           }
-        });
+        }
+        const clipboardUploadEncrypt = (e) => {
+          const file = e.clipboardData.items[0].getAsFile();
+          if (file) {
+            const formdata = new FormData();
+            formdata.append('upload', file);
+            fetch('https://pastebin.seanbehan.ca/encrypt', {
+              method: "POST",
+              body: formdata
+            }).then((response) => {
+              window.location = response.url;
+            }); 
+          }
+        }
+        document.getElementById('plaintext-form').addEventListener('paste', clipboardUpload);
+        document.getElementById('encrypted-form').addEventListener('paste', clipboardUploadEncrypt);
       }
     </script>
   </head>
@@ -110,7 +125,7 @@
       <button>submit</button>
     </form>
     <h2 class="encrypted">encrypted text</h2>
-    <form class="encrypted" method="post" action="./encrypt" enctype="multipart/form-data">
+    <form id="encrypted-form" class="encrypted" method="post" action="./encrypt" enctype="multipart/form-data">
       <div>
         <textarea name="paste" rows="20" cols="30" id="paste"></textarea>
       </div>

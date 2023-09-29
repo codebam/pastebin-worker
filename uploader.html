@@ -67,7 +67,19 @@
               showPlaintext();
             }
           };
-        console.log(encryption);
+        document.getElementById('plaintext-form').addEventListener('paste', (e) => {
+          const file = e.clipboardData.items[0].getAsFile();
+          if (file) {
+            const formdata = new FormData();
+            formdata.append('upload', file);
+            fetch('https://pastebin.seanbehan.ca/', {
+              method: "POST",
+              body: formdata
+            }).then((response) => {
+              window.location = response.url;
+            }); 
+          }
+        });
       }
     </script>
   </head>
@@ -84,7 +96,7 @@
       <option value="on">on</option>
     </select>
     <h2 class="plaintext">plain text</h2>
-    <form class="plaintext" method="post" enctype="multipart/form-data">
+    <form id="plaintext-form" class="plaintext" method="post" enctype="multipart/form-data">
       <div>
         <textarea name="paste" rows="20" cols="30" id="paste"></textarea>
       </div>
@@ -93,7 +105,7 @@
     </form>
     <form class="plaintext" method="post" enctype="multipart/form-data">
       <div>
-        <input type="file" id="upload" name="upload">
+        <input id="plaintext-file-select" type="file" id="upload" name="upload">
       </div>
       <button>submit</button>
     </form>

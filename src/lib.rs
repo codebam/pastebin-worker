@@ -252,6 +252,39 @@ async fn get_list(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     Response::ok(result)
 }
 
+async fn get_raw(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
+    let file_param = ctx.param("file").unwrap().to_owned();
+    let mime = mime_guess::from_path(file_param.clone()).first().unwrap();
+    let mut headers = Headers::new();
+    let result = ctx
+        .kv("pastebin")
+        .unwrap()
+        .get(file_param.as_str())
+        .text()
+        .await
+        .map_err(|e| console_log!("{}", e))
+        .unwrap()
+        .unwrap_or_else(|| String::from("404"));
+    let response = Response::from_body(ResponseBody::Body(result.into_bytes()));
+    let _result = headers
+        .append("Content-type", mime.to_string().as_str())
+        .unwrap();
+    Ok(Response::with_headers(response.unwrap(), headers))
+}
+
+async fn get_highlight(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
+    let result = ctx
+        .kv("pastebin")
+        .unwrap()
+        .get("highlight.html")
+        .text()
+        .await
+        .map_err(|e| console_log!("{}", e))
+        .unwrap()
+        .unwrap_or_else(|| String::from("404"));
+    Response::from_html(result)
+}
+
 #[event(fetch)]
 async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     console_error_panic_hook::set_once();
@@ -261,6 +294,8 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         .get_async("/list", get_list)
         .get_async("/encrypt/decrypt/:key/:nonce/:file", get_encrypted)
         .get_async("/:file", get)
+        .get_async("/raw/:file", get_raw)
+        .get_async("/highlight/:file", get_highlight)
         .post_async("/", post_put)
         .put_async("/", post_put)
         .post_async("/encrypt", post_encrypted)

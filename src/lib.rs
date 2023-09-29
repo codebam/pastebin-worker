@@ -1,3 +1,4 @@
+#![feature(try_blocks)]
 #![feature(path_file_prefix)]
 use base64::{engine::general_purpose, Engine as _};
 use chacha20poly1305::{
@@ -6,6 +7,7 @@ use chacha20poly1305::{
 };
 use lz4_flex::block::{compress_prepend_size, decompress_size_prepended};
 use rand::{distributions::Alphanumeric, Rng};
+use regex::Regex;
 use serde_json;
 use std::{ffi::OsStr, path::Path};
 use urlencoding::decode;
@@ -289,6 +291,58 @@ async fn get_highlight(_req: Request, ctx: RouteContext<()>) -> Result<Response>
     Response::from_html(result)
 }
 
+async fn search(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
+    let search_param = ctx.param("pattern").unwrap().to_owned();
+    let list = ctx
+        .kv("pastebin")
+        .unwrap()
+        .list()
+        .execute()
+        .await
+        .unwrap()
+        .keys
+        .iter()
+        .cloned()
+        .map(|key| key.name + "\n")
+        .collect::<String>()
+        .split("\n")
+        .collect::<Vec<&str>>()
+        .iter()
+        .map(|c| c.to_string())
+        .collect::<Vec<String>>();
+    let re = Regex::new(search_param.as_str()).unwrap();
+    let mut results: Vec<String> = vec![];
+    for file in list {
+        let contents = ctx
+            .kv("pastebin")
+            .unwrap()
+            .get(file.as_str())
+            .text()
+            .await
+            .unwrap_or_else(|_| Some("".to_string()))
+            .unwrap_or_else(|| "".to_string());
+        let body = general_purpose::STANDARD
+            .decode(contents.as_str())
+            .unwrap_or_else(|_| "".as_bytes().to_vec());
+        let decompressed =
+            decompress_size_prepended(body.as_slice()).unwrap_or_else(|_| "".as_bytes().to_vec());
+        match re.captures(
+            String::from_utf8(decompressed)
+                .unwrap_or_else(|_| "".to_string())
+                .as_str(),
+        ) {
+            Some(_) => results.append(&mut vec![file]),
+            None => {}
+        }
+    }
+    let results_string = results
+        .iter()
+        .cloned()
+        .map(|key| key + "\n")
+        .collect::<String>();
+    Response::ok(results_string)
+}
+
 #[event(fetch)]
 async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     console_error_panic_hook::set_once();
@@ -299,6 +353,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         .get_async("/encrypt/decrypt/:key/:nonce/:file", get_encrypted)
         .get_async("/:file", get)
         .get_async("/raw/:file", get_raw)
+        .get_async("/search/:pattern", search)
         .get_async("/highlight/:file", get_highlight)
         .post_async("/", post_put)
         .put_async("/", post_put)

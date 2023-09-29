@@ -254,7 +254,9 @@ async fn get_list(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
 
 async fn get_raw(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let file_param = ctx.param("file").unwrap().to_owned();
-    let mime = mime_guess::from_path(file_param.clone()).first().unwrap();
+    let mime = mime_guess::from_path(file_param.clone())
+        .first()
+        .unwrap_or_else(|| mime_guess::from_ext("txt").first().unwrap());
     let mut headers = Headers::new();
     let result = ctx
         .kv("pastebin")

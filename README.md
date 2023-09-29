@@ -7,6 +7,8 @@ Set up your own KV in the wrangler.toml and put uploader.html at /
 Supports MIME types by putting .file-ext at the end of filenames when
 downloading.
 
+Supports syntax highlighting by using https://pastebin.seanbehan.ca/highlight/yourfile.js
+
 Files are limited to 15MB due to KV limitations.
 
 Example usage:

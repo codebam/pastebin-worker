@@ -225,7 +225,9 @@ async fn get_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response>
     return match result.as_str() {
         "404" => Response::error(result, 404),
         &_ => {
-            let mime = mime_guess::from_path(path).first().unwrap();
+            let mime = mime_guess::from_path(path)
+                .first()
+                .unwrap_or_else(|| mime_guess::from_ext("txt").first().unwrap());
             let response = Response::from_body(ResponseBody::Body(decompressed));
             let mut headers = Headers::new();
             let _result = headers

@@ -40,63 +40,6 @@
         }
       }
     </style>
-    <script>
-      window.onload = () => {
-        let encryption;
-        let hidePlaintext = () => {
-          [...document.getElementsByClassName('plaintext')].map((el) => { el.style.display='none'; } )
-        }
-        let showEncryption = () => {
-          [...document.getElementsByClassName('encrypted')].map((el) => { el.style.display='block'; } )
-        }
-        let hideEncryption = () => {
-          [...document.getElementsByClassName('encrypted')].map((el) => { el.style.display='none'; } )
-        }
-        let showPlaintext = () => {
-          [...document.getElementsByClassName('plaintext')].map((el) => { el.style.display='block'; } )
-        }
-        hideEncryption();
-        document.getElementById('encrypted-select').onchange
-          = () => {
-            encryption = document.getElementById('encrypted-select').value;
-            if (encryption === 'on') {
-              hidePlaintext();
-              showEncryption();
-            } else {
-              hideEncryption();
-              showPlaintext();
-            }
-          };
-        const clipboardUpload = (e) => {
-          const file = e.clipboardData.items[0].getAsFile();
-          if (file) {
-            const formdata = new FormData();
-            formdata.append('upload', file);
-            fetch('https://pastebin.seanbehan.ca/', {
-              method: "POST",
-              body: formdata
-            }).then((response) => {
-              window.location = response.url;
-            }); 
-          }
-        }
-        const clipboardUploadEncrypt = (e) => {
-          const file = e.clipboardData.items[0].getAsFile();
-          if (file) {
-            const formdata = new FormData();
-            formdata.append('upload', file);
-            fetch('https://pastebin.seanbehan.ca/encrypt', {
-              method: "POST",
-              body: formdata
-            }).then((response) => {
-              window.location = response.url;
-            }); 
-          }
-        }
-        document.getElementById('plaintext-form').addEventListener('paste', clipboardUpload);
-        document.getElementById('encrypted-form').addEventListener('paste', clipboardUploadEncrypt);
-      }
-    </script>
   </head>
   <body>
     <h1>Sean's Pastebin</h1>
@@ -106,40 +49,87 @@
     <code>curl -Ls -o /dev/null -w %{url_effective} -F upload=@- https://pastebin.seanbehan.ca</code>
     <code>curl -Ls -o /dev/null -w %{url_effective} -F upload=@- https://pastebin.seanbehan.ca/encrypt</code>
     <p>encryption: </p>
-    <select name="encrypted" id="encrypted-select">
-      <option value="off">off</option>
-      <option value="on">on</option>
-    </select>
-    <h2 class="plaintext">plain text</h2>
-    <form id="plaintext-form" class="plaintext" method="post" enctype="multipart/form-data">
-      <div>
-        <textarea name="paste" rows="20" cols="30" id="paste"></textarea>
-      </div>
-      <button>submit</button>
-    <h2 class="plaintext">plain file</h2>
-    </form>
-    <form class="plaintext" method="post" enctype="multipart/form-data">
-      <div>
-        <input id="plaintext-file-select" type="file" id="upload" name="upload">
-      </div>
-      <button>submit</button>
-    </form>
-    <h2 class="encrypted">encrypted text</h2>
-    <form id="encrypted-form" class="encrypted" method="post" action="./encrypt" enctype="multipart/form-data">
-      <div>
-        <textarea name="paste" rows="20" cols="30" id="paste"></textarea>
-      </div>
-      <button>submit</button>
-    </form>
-    <h2 class="encrypted">encrypted file</h2>
-    <form class="encrypted" method="post" action="./encrypt" enctype="multipart/form-data">
-      <div>
-        <input type="file" id="upload" name="upload">
-      </div>
+    <h2 class="plaintext">Upload</h2>
+    <form id="form" enctype="multipart/form-data">
+		<div>
+			<label for="paste">Text</label>
+			<br />
+			<textarea name="paste" rows="20" cols="30" id="paste"></textarea>
+		</div>
+		<div>
+			<label for="file">File</label>
+			<br />
+			<input type="file" name="file" id="file" />
+		</div>
+		<div>
+			<label for="encrypted">Encryption</label>
+			<br />
+			<select name="encrypted" id="encrypted-select">
+		      <option value="off">off</option>
+		      <option value="on">on</option>
+		    </select>
+	    </div>
+	    <br />
       <button>submit</button>
     </form>
   </body>
   <footer>
     <a href="https://github.com/codebam/pastebin-worker">source code</a>
   </footer>
+
+
+<script>
+
+	let file = null; // an array would be good, but that'd be more work
+	let encrypt = false;
+	
+	let form = document.getElementById('form');
+	let fileInput = document.getElementById('file');
+	let textInput = document.getElementById('paste');
+	let encrptedSelect = document.getElementById('encrypted-select');
+	
+	form.onsubmit = (e) => {
+	  e.preventDefault();
+	
+	  let formData = new FormData();
+	
+	  if (file) {
+		formData.append('upload', file);
+	  } else {
+		formData.append('paste', textInput.value);
+	  }
+
+	  fetch('https://pastebin.seanbehan.ca/' + (encrypt ? 'encrypt' : ''), {
+	  	method: 'POST',
+	  	body: formData
+	  }).then((response) => {
+	  	location.href = response.url;
+	  });
+	  
+	};
+	
+	form.onpaste = (e) => {
+	  file = e.clipboardData.items[0].getAsFile();
+	};
+	
+	fileInput.onchange = (e) => {
+	  if (e.target.files.length) {
+	    file = e.target.files[0];
+	  }
+	};
+
+	fileInput.onclick = (e) => {
+	  if (e.target.files.length) {
+	    file = e.target.files[0];
+	  }
+	};
+
+	encrptedSelect.onchange = (e) => {
+	  if(encrptedSelect.value == 'on'){
+	  	encrypt = true;
+	  } else {
+	  	encrypt = false;
+	  }
+	};
+</script>
 </html>

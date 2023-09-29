@@ -50,5 +50,3 @@ export const pastebin = {
 ```
 
 Or just use the provided uploader.html
-
-your name

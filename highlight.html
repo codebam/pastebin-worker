@@ -48,7 +48,7 @@
 	document.getElementById("codeblock").innerText = text;
 	lang = evaluateType(filename.split('.').pop());
 	document.getElementById("pre").classList.add(`language-${lang}`)
-	Prism.highlightAll();
+        document.getElementById("codeblock").innerHTML = Prism.highlight(text, Prism.languages[lang], lang);
      })
  }
 </script>

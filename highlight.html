@@ -2,56 +2,62 @@
 <html>
 
 <head>
- <link href="https://pastebin.seanbehan.ca/raw/prism.css" rel="stylesheet" />
- <script src="https://pastebin.seanbehan.ca/raw/prism.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://pastebin.seanbehan.ca/raw/prism.css" rel="stylesheet" />
+  <script src="https://pastebin.seanbehan.ca/raw/prism.js"></script>
 
- <style>
-  body{
-    margin: 0;
-    padding: 0;
-  }
-  pre{
-    position: absolute;
-    left: 0;
-    width: 100%;
-    min-height: 100%;
-    top: -10px;
-    border: 0 !important;
-    border-radius: 0 !important;
- </style>
+  <style>
+    body{
+      margin: 0;
+      padding: 0;
+    }
+    pre{
+      position: absolute;
+      left: 0;
+      width: 100%;
+      min-height: 100%;
+      top: -10px;
+      border: 0 !important;
+      border-radius: 0 !important;
+    }
+  </style>
 </head>
 
 <body>
-<pre id="pre"><code id="codeblock">loading...</code></pre>
-</body>
 
-<script>
-  function evaluateType(ext){
-   let type = ext;
-   switch(ext){
-    case "js":
-     type = 'javascript';
-     break;
-    case "py":
-     type = 'pyhon';
-     break;
-    case "ts":
-     type = 'typescript';
-     break;
+  <pre id="pre">
+    <code id="codeblock">loading...</code>
+  </pre>
+
+  <script>
+    function evaluateType(ext){
+     let type = ext;
+     switch(ext){
+      case "js":
+       type = 'javascript';
+       break;
+      case "py":
+       type = 'pyhon';
+       break;
+      case "ts":
+       type = 'typescript';
+       break;
+     }
+     return type;
+    }
+   window.onload = function(){
+    let filename = location.pathname.split('/').pop()
+    fetch('https://pastebin.seanbehan.ca/' + filename)
+       .then((response) => response.text())
+       .then((text) => {
+  	document.getElementById("codeblock").innerText = text;
+  	lang = evaluateType(filename.split('.').pop());
+  	document.getElementById("pre").classList.add(`language-${lang}`)
+          document.getElementById("codeblock").innerHTML = Prism.highlight(text, Prism.languages[lang], lang);
+       })
    }
-   return type;
-  }
- window.onload = function(){
-  let filename = location.pathname.split('/').pop()
-  fetch('https://pastebin.seanbehan.ca/' + filename)
-     .then((response) => response.text())
-     .then((text) => {
-	document.getElementById("codeblock").innerText = text;
-	lang = evaluateType(filename.split('.').pop());
-	document.getElementById("pre").classList.add(`language-${lang}`)
-        document.getElementById("codeblock").innerHTML = Prism.highlight(text, Prism.languages[lang], lang);
-     })
- }
-</script>
+  </script>
 
+</body>
 </html>

@@ -132,7 +132,12 @@ async fn delete(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
         .unwrap()
         .delete(file)
         .await;
-    Response::ok("deleted")
+    let mut headers = Headers::new();
+    let _result = headers.append("Access-Control-Allow-Origin", "*").unwrap();
+    Ok(Response::with_headers(
+        Response::ok("deleted").unwrap(),
+        headers,
+    ))
 }
 
 async fn get_index(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
@@ -358,6 +363,19 @@ async fn get_search(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     Response::from_html(result)
 }
 
+async fn get_term(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
+    let result = ctx
+        .kv("pastebin")
+        .unwrap()
+        .get("term.html")
+        .text()
+        .await
+        .map_err(|e| console_log!("{}", e))
+        .unwrap()
+        .unwrap_or_else(|| String::from("404"));
+    Response::from_html(result)
+}
+
 #[event(fetch)]
 async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     console_error_panic_hook::set_once();
@@ -367,6 +385,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         .get_async("/list", get_list)
         .get_async("/encrypt/decrypt/:key/:nonce/:file", get_encrypted)
         .get_async("/:file", get)
+        .get_async("/term", get_term)
         .get_async("/files", get_search)
         .get_async("/raw/:file", get_raw)
         .get_async("/search/:pattern", search)

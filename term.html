@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>sean's pastebin terminal</title>
+	<meta name="authod" content="makano" />
+
+
+	<link rel="stylesheet" type="text/css" href="./term.css" />
+  <!-- <link href="https://pastebin.seanbehan.ca/raw/prism.css" rel="stylesheet" />
+  <script src="https://pastebin.seanbehan.ca/raw/prism.js"></script> -->
+
+</head>
+<body>
+
+
+<script src="./jquery.js"></script>
+<script src="./term.js"></script>
+<script>
+const base_url = "https://pastebin.seanbehan.ca";
+let file;
+
+function selectFile(_file){
+	if(_file instanceof File) {
+		file = _file;
+		term.echo('[[;#ffff00;]File Selected: '+file.name+']');
+	} else if(_file == "none"){
+		file = null;
+		term.echo('Unselected file');
+	}
+}
+
+
+function evaluateType(ext){
+ let type = ext;
+ switch(ext){
+  case "js":
+   type = 'javascript';
+   break;
+  case "py":
+   type = 'pyhon';
+   break;
+  case "ts":
+   type = 'typescript';
+   break;
+  case "rs":
+   type = 'rust';
+   break;
+  case "json":
+   type = 'javascript';
+   break;
+ }
+ return type;
+}
+
+function griddedFiles(text){
+	const maxItemWidth = 20;
+
+  const lines = text.split('\n');
+  lines.shift();
+
+  const numRows = term.rows();
+  const numCols = term.cols();
+
+  const itemsPerRow = Math.floor(numCols / (maxItemWidth + 2)); // +2 for spacing
+
+  let output = '';
+  let row = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    if (row >= numRows - 1) {
+      break;
+    }
+    const line = lines[i].trim();
+
+    const maxItemWidth = Math.floor(numCols / itemsPerRow);
+
+    if (line.length <= maxItemWidth) output += line.padEnd(maxItemWidth) + '  ';
+    else output += line.substring(0, maxItemWidth - 3) + '...  ';
+
+    if ((i + 1) % itemsPerRow === 0) {
+      output = output.trim() + '\n';
+      row++;
+    }
+  }
+
+  return output;
+}
+
+const commands = {
+	echo(term, ...a){
+		term.echo(a.join(' '));
+	},
+	ls(term){
+		term.pause();
+		fetch(base_url+'/list')
+		.then(response => response.text())
+		.then(text => {
+			const output = griddedFiles(text);
+
+      term.echo(output);
+			term.resume();
+		})
+		.catch(() => term.resume());
+	},
+	async rm(term, ...files){
+		term.pause();
+		for(var i = 0; i < files.length; i++){
+			let file = files[i];
+			try{
+				await fetch(base_url+'/'+file, { method: 'DELETE' });
+			} catch(e){
+				term.error('File delete failed: '+file);
+			}
+		}
+		term.resume();
+	},
+	new(term, ...argv){
+		let options = $.terminal.parse_options(argv, {boolean: ['e']});
+		let content = options._.join(' ');
+		let formData = new FormData();
+		term.pause();
+
+	  if (file) {
+			formData.append('upload', file);
+	  } else {
+			formData.append('paste', content);
+	  }
+
+	  fetch('https://pastebin.seanbehan.ca/' + (options.e ? 'encrypt' : ''), {
+	  	method: 'POST',
+	  	body: formData
+	  }).then((response) => {
+	  	selectFile('none');
+	  	term.echo(response.url.split('/').pop());
+	  	term.resume();
+	  });
+	},
+	file(term, ...argv){
+		let options = $.terminal.parse_options(argv, {boolean: ['r']});
+		if(options.r){
+			selectFile('none');
+		} else {
+			let input = document.createElement('input');
+			input.type = 'file';
+			input.onchange = (e) => {
+			  if (e.target.files.length) {
+			    selectFile(e.target.files[0]);
+			  }
+			};
+			input.click();
+		}
+	},
+	cat(term, filename){
+		term.pause();
+		fetch(base_url+'/'+filename)
+		.then(response => response.text())
+		.then(text => {
+			let ext = text.match('.') ? text.split('.').pop() : null;
+			// if(ext) $.terminal.syntax(evaluateType(ext));
+			term.echo(text);
+			// if(ext) $.terminal.syntax('shell');
+			term.resume();
+		})
+		.catch(() => term.resume());
+	},
+	find(term, ...key){
+		term.pause();
+		fetch(base_url+'/search/'+key.join(' '))
+		.then(response => response.text())
+		.then(text => {
+			let output = griddedFiles(text);
+
+			term.echo(output);
+			term.resume();
+		})
+		.catch(() => term.resume());
+	},
+	grep(term, ...key){
+		term.pause();
+		let query = key.join(' ');
+		fetch(base_url+'/search/'+query)
+		.then(response => response.text())
+		.then(async text => {
+			let output = "";
+			let files = text.split('\n');
+			for(var i = 0, length1 = files.length; i < length1; i++){
+				let file = files[i];
+				let $file = await fetch(base_url+'/'+file);
+				let content = await $file.text();
+				if(content.match(query)){
+					output += '[[;#09D0D0;]'+file+']\n';
+					content.split('\n').forEach(line => {
+						if(line.match(query)) 
+							output += line.replace(new RegExp('('+query+')', 'g'), '[[;#FFFF00;]$1]')+'\n';
+					});
+				}
+			}
+
+			term.echo(output);
+			term.resume();
+		})
+		.catch(() => term.resume());
+	},
+	help(){
+		term.echo(Object.keys(commands));
+	}
+};
+var term = $('body').terminal((argv, term) => {
+	let command = $.terminal.parse_command(argv);
+	if(command.name in commands){
+		commands[command.name](term, ...command.args);
+	} else {
+		term.error('Command not found!');
+	}
+}, {
+	greetings: "sean's pastebin terminal",
+	prompt: "$ ",
+  autocompleteMenu: true,
+  completion: Object.keys(commands)
+});
+$('body').on('paste', (e) => {
+	if(e.clipboardData.files.length) selectFile(e.clipboardData.items[0].getAsFile());
+});
+</script>
+</body>
+</html>

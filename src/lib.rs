@@ -123,9 +123,22 @@ async fn post_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response
     Response::redirect(redirect_url)
 }
 
+static DELETE_WHITELIST: [&str; 7] = [
+    "/",
+    "term.js",
+    "term.css",
+    "term.html",
+    "jquery.js",
+    "highlight.html",
+    "search.html",
+];
+
 async fn delete(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let empty_string = String::new();
     let file = ctx.param("file").unwrap_or_else(|| &empty_string).as_str();
+    if DELETE_WHITELIST.contains(&file) {
+        return Response::ok("this file is protected");
+    }
     let _result = ctx
         .kv("pastebin")
         .map_err(|e| console_log!("{}", e))

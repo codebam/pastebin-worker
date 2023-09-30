@@ -173,7 +173,9 @@ async fn get(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     return match result.as_str() {
         "404" => Response::error(result, 404),
         &_ => {
-            let mime = mime_guess::from_path(path).first().unwrap();
+            let mime = mime_guess::from_path(path)
+                .first()
+                .unwrap_or_else(|| mime_guess::from_ext("txt").first().unwrap());
             let response = Response::from_body(ResponseBody::Body(decompressed));
             let mut headers = Headers::new();
             let _result = headers
@@ -343,6 +345,19 @@ async fn search(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     Response::ok(results_string)
 }
 
+async fn get_search(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
+    let result = ctx
+        .kv("pastebin")
+        .unwrap()
+        .get("search.html")
+        .text()
+        .await
+        .map_err(|e| console_log!("{}", e))
+        .unwrap()
+        .unwrap_or_else(|| String::from("404"));
+    Response::from_html(result)
+}
+
 #[event(fetch)]
 async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     console_error_panic_hook::set_once();
@@ -352,6 +367,7 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         .get_async("/list", get_list)
         .get_async("/encrypt/decrypt/:key/:nonce/:file", get_encrypted)
         .get_async("/:file", get)
+        .get_async("/files", get_search)
         .get_async("/raw/:file", get_raw)
         .get_async("/search/:pattern", search)
         .get_async("/highlight/:file", get_highlight)

@@ -11,6 +11,13 @@
   <!-- <link href="https://pastebin.seanbehan.ca/raw/prism.css" rel="stylesheet" />
   <script src="https://pastebin.seanbehan.ca/raw/prism.js"></script> -->
 
+  <style>
+  	body{
+  		--background: #2e3440;
+  		--color: #d8dee9;
+  	}
+  </style>
+
 </head>
 <body>
 
@@ -106,15 +113,17 @@ const commands = {
 	},
 	async rm(term, ...files){
 		term.pause();
-		for(var i = 0; i < files.length; i++){
-			let file = files[i];
-			try{
-				await fetch(base_url+'/'+file, { method: 'DELETE' });
-			} catch(e){
-				term.error('File delete failed: '+file);
-			}
-		}
-		term.resume();
+		files
+			.map((file, index) => {
+				fetch(base_url+'/delete/'+file)
+				.then(() => {
+					term.echo('Deleted '+file);
+					if(index == files.length-1) term.resume();
+				}).catch(e => {
+					if(index == files.length-1) term.resume();
+					term.error('File delete failed: '+file);
+				});
+			});
 	},
 	new(term, ...argv){
 		let options = $.terminal.parse_options(argv, {boolean: ['e']});
@@ -220,8 +229,8 @@ var term = $('body').terminal((argv, term) => {
   autocompleteMenu: true,
   completion: Object.keys(commands)
 });
-$('body').on('paste', (e) => {
-	if(e.clipboardData.files.length) selectFile(e.clipboardData.items[0].getAsFile());
+document.body.addEventListener('paste', (e) => {
+	if(e.clipboardData?.files?.length) selectFile(e.clipboardData.files[0]);
 });
 </script>
 </body>

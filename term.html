@@ -173,7 +173,7 @@ const commands = {
 		  	body: formData
 		  }).then((response) => {
 		  	if(file) selectFile('none');
-		  	term.echo(response.url.split('/').pop());
+		  	term.echo(response.url+' || '+response.url.split('/').pop());
 		  	term.resume();
 		  });
 		}

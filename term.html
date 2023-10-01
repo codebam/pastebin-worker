@@ -253,15 +253,14 @@ const commands = {
 				let $file = await fetch(base_url+'/'+file);
 				let content = await $file.text();
 				if(content.match(query)){
-					output += '[[;#09D0D0;]'+file+']\n';
+					term.echo('> [[;#09D0D0;]'+file+']:');
 					content.split('\n').forEach(line => {
 						if(line.match(query)) 
-							output += line.replace(new RegExp('('+query+')', 'g'), '[[;#FFFF00;]$1]')+'\n';
+							term.echo(line.replace(new RegExp('('+query+')', 'g'), '[[;#FFFF00;]$1]'));
 					});
 				}
 			}
 
-			term.echo(output);
 			term.resume();
 		})
 		.catch(() => term.resume());

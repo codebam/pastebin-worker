@@ -8,6 +8,9 @@
 
 
 	<link rel="stylesheet" type="text/css" href="https://pastebin.seanbehan.ca/raw/term.css" />
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@600&display=swap" rel="stylesheet">
   <!-- <link href="https://pastebin.seanbehan.ca/raw/prism.css" rel="stylesheet" />
   <script src="https://pastebin.seanbehan.ca/raw/prism.js"></script> -->
 
@@ -15,6 +18,27 @@
   	body{
   		--background: #2e3440;
   		--color: #d8dee9;
+  		--font: 'Fira Code', monospace;
+  	}
+  	dialog{
+  		position: fixed;
+  		top: 50%;
+  		left: 50%;
+  		transform: translate(-50%, -50%);
+  		width: 60%;
+  		height: 60%;
+  		background: #4c566a;
+  		border: 0;
+  		border-radius: 15px;
+  		overflow: hidden;
+  	}
+  	dialog textarea{
+  		position: absolute;
+  		top: 0;
+  		left: 0;
+  		width: 100%;
+  		height: 100%;
+  		background: transparent;
   	}
   </style>
 
@@ -131,20 +155,50 @@ const commands = {
 		let formData = new FormData();
 		term.pause();
 
-	  if (file) {
-			formData.append('upload', file);
-	  } else {
-			formData.append('paste', content);
-	  }
+		function proceed(){
+			if (file) {
+				formData.append('upload', file);
+		  } else {
+				formData.append('paste', content);
 
-	  fetch('https://pastebin.seanbehan.ca/' + (options.e ? 'encrypt' : ''), {
-	  	method: 'POST',
-	  	body: formData
-	  }).then((response) => {
-	  	selectFile('none');
-	  	term.echo(response.url.split('/').pop());
-	  	term.resume();
-	  });
+				if(!content.length){
+					term.error('No content passed.');
+					term.resume();
+					return;
+				}
+		  }
+
+		  fetch('https://pastebin.seanbehan.ca/' + (options.e ? 'encrypt' : ''), {
+		  	method: 'POST',
+		  	body: formData
+		  }).then((response) => {
+		  	if(file) selectFile('none');
+		  	term.echo(response.url.split('/').pop());
+		  	term.resume();
+		  });
+		}
+
+		if(!file && !content.length){
+			let dialog = document.createElement('dialog');
+			let textarea = document.createElement('textarea');
+			textarea.placeholder = 'Hit shift+enter when done';
+			dialog.appendChild(textarea);
+			document.body.appendChild(dialog);
+
+			textarea.addEventListener('keyup', (e) => {
+				if(e.shiftKey && (e.keyCode == 13 || e.key == "Enter")){
+					dialog.remove();
+					content = textarea.value;
+					proceed();
+				}
+			});
+
+			dialog.show();
+		} else {
+			proceed();
+		}
+
+	  
 	},
 	file(term, ...argv){
 		let options = $.terminal.parse_options(argv, {boolean: ['r']});
@@ -213,7 +267,26 @@ const commands = {
 		.catch(() => term.resume());
 	},
 	help(){
-		term.echo(Object.keys(commands));
+		let text = ["Available commands:",
+	  "[[;#00ff44;]ls]: lists files",
+	  "[[;#00ff44;]echo]: outputs",
+	  "[[;#00ff44;]rm]: removes multiple files",
+	  "[[;#00ff44;]new]: adds a new file, use '-e' option to enable encryption",
+	  "[[;#00ff44;]file]: opens a file selection menu, use '-r' to unselect a file",
+	  "[[;#00ff44;]cat]: outputs the content of a file",
+	  "[[;#00ff44;]grep]: outputs each match for a search query with its exact match",
+	 	"[[;#00ff44;]find]: finds files"].join('\n');
+		term.pause();
+		let words = text.split(/ /);
+		words.forEach((text, index) => {
+			setTimeout(() => {
+				term.echo(text+' ', { newline: false });
+				if(index == words.length-1) {
+					term.echo('');
+					term.resume();
+				}
+			}, 100*index);
+		});
 	}
 };
 var term = $('body').terminal((argv, term) => {
@@ -227,7 +300,15 @@ var term = $('body').terminal((argv, term) => {
 	greetings: "sean's pastebin terminal",
 	prompt: "$ ",
   autocompleteMenu: true,
-  completion: Object.keys(commands)
+  completion: function(string, callback) {
+    if (this.get_command().match(/^([a-zA-Z0-9]+) /)) {
+      return fetch(base_url+'/list')
+      .then(res => res.text())
+      .then(text => text.split('\n').splice(0));
+    } else {
+      callback(Object.keys(commands));
+    }
+  }
 });
 document.body.addEventListener('paste', (e) => {
 	if(e.clipboardData?.files?.length) selectFile(e.clipboardData.files[0]);

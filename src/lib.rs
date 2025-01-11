@@ -1,7 +1,7 @@
 #![feature(path_file_prefix)]
 use base64::{engine::general_purpose, Engine as _};
 use chacha20poly1305::{
-    aead::{Aead, AeadCore, KeyInit, OsRng},
+    aead::{Aead, AeadCore, KeyInit},
     ChaCha20Poly1305,
 };
 use lz4_flex::block::{compress_prepend_size, decompress_size_prepended};
@@ -58,10 +58,10 @@ async fn post_put(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
 }
 
 async fn post_encrypted(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
-    let key = ChaCha20Poly1305::generate_key(&mut OsRng);
+    let key = ChaCha20Poly1305::generate_key().unwrap();
     let keytext = general_purpose::STANDARD.encode(serde_json::to_string(&key).unwrap());
     let cipher = ChaCha20Poly1305::new(&key);
-    let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng); // 96-bits; unique per message
+    let nonce = ChaCha20Poly1305::generate_nonce().unwrap(); // 96-bits; unique per message
     let noncetext = general_purpose::STANDARD.encode(serde_json::to_string(&nonce).unwrap());
     let mut req_mut = _req.clone_mut().map_err(|e| console_log!("{}", e)).unwrap();
     let form_data = req_mut.form_data().await.unwrap();

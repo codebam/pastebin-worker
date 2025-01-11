@@ -1,4 +1,3 @@
-#![feature(try_blocks)]
 #![feature(path_file_prefix)]
 use base64::{engine::general_purpose, Engine as _};
 use chacha20poly1305::{
